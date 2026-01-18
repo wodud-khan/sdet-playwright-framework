@@ -1,0 +1,33 @@
+# Virtual environments
+venv/
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Test artifacts
+artifacts/
+logs/
+allure-results/
+allure-report/
+playwright-report/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Coverage
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# Node
+node_modules/

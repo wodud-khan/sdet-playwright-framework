@@ -1,0 +1,10 @@
+pytest
+pytest-playwright
+allure-pytest
+playwright
+requests
+python-dotenv
+pytest-xdist
+pytest-rerunfailures
+flake8
+black

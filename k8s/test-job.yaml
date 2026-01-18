@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: playwright-ui-tests
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+      - name: tests
+        image: sdet-playwright:latest
+        command: ["pytest", "-m", "smoke", "-n", "auto"]
+      restartPolicy: Never

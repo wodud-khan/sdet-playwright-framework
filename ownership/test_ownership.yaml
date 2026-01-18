@@ -1,0 +1,7 @@
+test_auth_token:
+  owner: backend-team
+  jira: AUTH-101
+
+test_checkout_e2e:
+  owner: qa-platform
+  jira: E2E-45
