@@ -1,3 +1,61 @@
+## Folder Structure & Design Rationale
+
+This repository follows a modular, scalable test automation architecture designed to support UI, API, and integration testing within a single framework. The structure emphasizes separation of concerns, maintainability, and ease of extension.
+
+### Core Directories
+
+- `pages/`  
+  Implements the Page Object Model (POM) for UI automation using Playwright. Each page encapsulates selectors and behaviors to promote reuse and reduce test fragility.
+
+- `tests/`  
+  Contains all automated test cases, organized by test type:
+  - `ui/` for end-to-end and functional UI tests
+  - `api/` for API, contract, and schema validation tests
+  - `data/` for structured test data inputs
+
+- `api/`  
+  Provides reusable API clients, endpoint definitions, request configurations, and response schemas to support robust backend testing and service-level validation.
+
+- `utils/`  
+  Shared utilities including logging, data factories, schema validation helpers, and failure intelligence to support consistent test behavior and diagnostics.
+
+- `config/`  
+  Centralized environment configuration and runtime settings, enabling clean separation between test logic and execution context.
+
+- `contracts/`  
+  JSON schema definitions used for contract and response validation to ensure backend compatibility and data integrity.
+
+- `mock_services/`  
+  Lightweight mock services used to simulate dependent systems during integration and negative-path testing.
+
+- `observability/`  
+  Metadata and hooks intended to support traceability, reporting enrichment, and future integration with monitoring or analytics systems.
+
+- `ownership/`  
+  Defines test ownership mappings to improve accountability and support triage workflows in team environments.
+
+### Infrastructure & Execution
+
+- `conftest.py`  
+  Global Pytest fixtures and lifecycle hooks shared across UI and API tests.
+
+- `pytest.ini`  
+  Pytest configuration, markers, and execution defaults.
+
+- `Dockerfile`  
+  Enables containerized execution for local runs and CI pipelines.
+
+- `Jenkinsfile`  
+  Defines CI execution stages for automated test runs.
+
+- `k8s/`  
+  Kubernetes job configuration for running tests in containerized environments.
+
+### Generated Artifacts
+
+Execution artifacts such as logs, screenshots, videos, Allure results, virtual environments, and Python cache files are intentionally excluded from version control and generated dynamically during test execution.
+
+
 ## About the Author
 
 I am a Quality Assurance Engineer with extensive experience spanning manual testing, test automation, and backend validation across business-critical software platforms. My professional background includes supporting web, mobile, API, and data-driven systems in healthcare, retail, and enterprise environments, with a consistent focus on reliability, scalability, and real-world usability.
