@@ -1,3 +1,53 @@
+## How to Run Tests
+
+This framework supports local execution and CI-ready test runs for both UI and API automation. The steps below outline how to set up the environment and execute tests consistently.
+
+### Prerequisites
+
+- Python 3.10 or higher
+- Git
+- Playwright-supported browser dependencies
+
+### Setup Instructions
+
+1. Clone the repository:
+   git clone https://github.com/wodud-khan/sdet-playwright-framework.git
+   cd sdet-playwright-framework
+
+2. Create and activate a virtual environment:
+   python -m venv venv
+   source venv/bin/activate
+
+3. Install project dependencies:
+   pip install -r requirements.txt
+
+4. Install Playwright browsers:
+   playwright install
+
+### Running Tests Locally
+
+- Run all tests:
+  pytest
+
+- Run UI tests only:
+  pytest tests/ui
+
+- Run API tests only:
+  pytest tests/api
+
+- Run tests in parallel:
+  pytest -n auto
+
+### Test Reporting
+
+- Allure results are generated automatically during execution.
+- To view the report locally:
+  allure serve allure-results
+
+### CI Execution
+
+This repository includes CI configuration files (Dockerfile, Jenkinsfile, and Kubernetes job definitions) to enable automated execution in containerized and pipeline-based environments. These configurations demonstrate how the framework can be integrated into enterprise CI/CD workflows.
+
 ## Folder Structure & Design Rationale
 
 This repository follows a modular, scalable test automation architecture designed to support UI, API, and integration testing within a single framework. The structure emphasizes separation of concerns, maintainability, and ease of extension.
