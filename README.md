@@ -48,6 +48,80 @@ This framework supports local execution and CI-ready test runs for both UI and A
 
 This repository includes CI configuration files (Dockerfile, Jenkinsfile, and Kubernetes job definitions) to enable automated execution in containerized and pipeline-based environments. These configurations demonstrate how the framework can be integrated into enterprise CI/CD workflows.
 
+## Test Strategy & Coverage Overview
+
+This framework is designed to demonstrate a balanced, risk-based testing strategy aligned with modern Quality Engineering principles. Test coverage is intentionally structured to validate critical system behavior across UI, API, and integration layers while maintaining execution efficiency and maintainability.
+
+### Testing Philosophy
+
+The test strategy prioritizes:
+- Early validation at the API and contract level to reduce UI dependency
+- Targeted UI automation focused on critical user workflows
+- Clear separation between test intent, test data, and execution logic
+- Deterministic, repeatable test execution suitable for CI environments
+
+The goal is not exhaustive automation, but meaningful coverage that maximizes signal while minimizing maintenance overhead.
+
+### UI Test Coverage
+
+UI automation focuses on:
+- Core user journeys and business-critical workflows
+- High-risk functional paths where UI behavior impacts user outcomes
+- Validation of navigation, form interactions, and end-to-end flows
+
+UI tests are implemented using the Page Object Model (POM) to:
+- Reduce duplication
+- Improve readability
+- Isolate selector changes from test logic
+
+Visual styling, pixel-perfect validation, and non-critical UI elements are intentionally excluded to avoid brittle tests.
+
+### API Test Coverage
+
+API testing serves as the foundation of the framework and includes:
+- Endpoint-level functional validation
+- Request and response schema validation
+- Negative-path and error-handling scenarios
+- Data integrity and business rule enforcement
+
+Reusable API clients and contract definitions are used to promote consistency and reduce duplication across tests.
+
+### Integration & Contract Testing
+
+Where applicable, integration-level tests validate:
+- Interactions between dependent services
+- Contract compatibility using JSON schema validation
+- Controlled failure scenarios using mock services
+
+This layer helps identify breaking changes early without requiring full end-to-end UI execution.
+
+### Test Data Strategy
+
+Test data is:
+- Externalized from test logic
+- Structured for clarity and reuse
+- Designed to support positive, negative, and edge-case scenarios
+
+This approach enables scalable test expansion without rewriting existing tests.
+
+### Execution Scope & Non-Goals
+
+The following are intentionally out of scope for this repository:
+- Load and performance testing
+- Cross-browser visual regression testing
+- Accessibility audits beyond basic functional validation
+
+These exclusions are deliberate to keep the framework focused on functional correctness, reliability, and maintainability.
+
+### CI/CD Alignment
+
+All tests are designed to be:
+- Deterministic and environment-agnostic
+- Executable in parallel
+- Suitable for containerized and pipeline-based execution
+
+This ensures the framework can scale from local development to enterprise CI/CD workflows.
+
 ## Folder Structure & Design Rationale
 
 This repository follows a modular, scalable test automation architecture designed to support UI, API, and integration testing within a single framework. The structure emphasizes separation of concerns, maintainability, and ease of extension.
