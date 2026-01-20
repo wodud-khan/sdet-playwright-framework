@@ -1,12 +1,45 @@
+## Quick Start (5 Minutes)
+
+This section provides the fastest path to clone the repository, install dependencies, and execute a sample test suite.
+
+```bash
+git clone https://github.com/wodud-khan/sdet-playwright-framework.git
+cd sdet-playwright-framework
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+playwright install
+```
+
+```bash
+uvicorn mock_services.auth_service.main:app --port 8001
+```
+```bash
+pytest tests/api
+```
+
 ## How to Run Tests
 
 This framework supports local execution and CI-ready test runs for both UI and API automation. The steps below outline how to set up the environment and execute tests consistently.
 
 ### Prerequisites
 
-- Python 3.10 or higher
-- Git
-- Playwright-supported browser dependencies
+To run this framework locally, ensure the following prerequisites are installed and available on your system:
+
+- Python 3.10 or higher  
+  Required for running Pytest, Playwright automation, and supporting utilities.
+
+- Git  
+  Used to clone the repository and manage version control.
+
+- Playwright-supported browser dependencies  
+  Required for executing UI tests across Chromium, Firefox, and WebKit. These dependencies are installed automatically during Playwright setup.
+
+- Virtual environment support (recommended)  
+  Using `venv` or a similar tool is recommended to isolate project dependencies and avoid conflicts.
+
+- Uvicorn  
+  Required to run the local mock API service used by API test suites.
 
 ### Setup Instructions
 
@@ -24,6 +57,15 @@ This framework supports local execution and CI-ready test runs for both UI and A
 4. Install Playwright browsers:
    playwright install
 
+### Start Local Mock API Service (Required for API Tests)
+
+Some API test suites in this framework rely on a locally running mock authentication service to simulate backend dependencies. This service is implemented using FastAPI and served via Uvicorn.
+
+Before running API tests, start the mock service in a separate terminal session:
+
+```bash
+uvicorn mock_services.auth_service.main:app --port 8001
+```
 ### Running Tests Locally
 
 - Run all tests:
@@ -121,6 +163,295 @@ All tests are designed to be:
 - Suitable for containerized and pipeline-based execution
 
 This ensures the framework can scale from local development to enterprise CI/CD workflows.
+
+## Framework Capabilities & Key Design Decisions
+
+This framework is intentionally designed as a production-style quality engineering system rather than a simple test automation project. Architectural and tooling decisions reflect real-world enterprise constraints, including scalability, maintainability, and CI/CD readiness.
+
+### Core Capabilities
+
+The framework supports:
+
+- **Multi-layer testing**
+  - UI automation with Playwright
+  - API automation with Pytest
+  - Integration and contract validation
+  - Data-driven testing patterns
+
+- **Modular architecture**
+  - Clear separation between test logic, test data, and execution layers
+  - Reusable components for API clients, page objects, and utilities
+  - Centralized configuration management
+
+- **CI/CD readiness**
+  - Headless execution support
+  - Parallel test execution
+  - Containerized execution capability
+  - Pipeline-compatible reporting and logging
+
+- **Observability and diagnostics**
+  - Centralized logging
+  - Failure traceability
+  - Artifact generation (screenshots, logs, reports)
+  - Structured test outputs for debugging and triage
+
+### Key Design Decisions
+
+#### Pytest as the Core Test Runner
+
+Pytest was selected due to:
+- Mature fixture model
+- Plugin ecosystem
+- Native parallel execution support
+- Strong CI/CD compatibility
+- Readable test structure
+
+This enables scalable test growth without increasing framework complexity.
+
+#### Playwright for UI Automation
+
+Playwright is used for UI testing because of:
+- Modern browser automation architecture
+- Reliable synchronization and waiting mechanisms
+- Native headless execution
+- Strong CI stability
+- Cross-browser support readiness
+
+This ensures UI automation is stable, fast, and pipeline-friendly.
+
+#### Page Object Model (POM)
+
+The Page Object Model is implemented to:
+- Encapsulate UI behavior
+- Reduce selector duplication
+- Improve test readability
+- Isolate UI changes from test logic
+
+This design significantly reduces maintenance costs as the application evolves.
+
+#### API-First Validation Strategy
+
+The framework emphasizes API testing before UI testing to:
+- Detect defects earlier in the lifecycle
+- Reduce test execution time
+- Improve failure isolation
+- Increase test reliability
+
+This mirrors enterprise testing pyramids used in production systems.
+
+#### Externalized Configuration
+
+Environment-specific values are:
+- Centralized
+- Externalized from test logic
+- Configurable per environment
+- CI/CD injectable
+
+This enables seamless execution across local, staging, and pipeline environments.
+
+#### Contract and Schema Validation
+
+JSON schema validation is used to:
+- Enforce backend compatibility
+- Detect breaking API changes
+- Protect dependent systems
+- Support backward compatibility testing
+
+This supports long-term system stability and integration confidence.
+
+#### Logging and Diagnostics Strategy
+
+The logging architecture is designed to:
+- Capture both UI and API execution flows
+- Support parallel test execution
+- Enable failure root-cause analysis
+- Integrate with CI/CD artifacts
+
+This ensures failures are diagnosable without rerunning tests.
+
+#### Scalability Considerations
+
+The framework is structured to support:
+- Test suite growth
+- Team collaboration
+- Service expansion
+- Multi-project reuse
+- Enterprise governance models
+
+This makes the framework suitable not only for portfolio demonstration, but also for real organizational adoption.
+
+### Design Philosophy
+
+All design choices follow three guiding principles:
+
+1. **Maintainability over cleverness**  
+2. **Reliability over speed**  
+3. **Clarity over abstraction**
+
+This ensures the framework remains understandable, extensible, and sustainable as complexity increases.
+
+## Reporting, Logging & Observability
+
+This framework incorporates a structured observability strategy to ensure that test execution results are transparent, diagnosable, and actionable in both local and CI/CD environments. The design emphasizes reproducibility, failure traceability, and minimal reliance on manual reruns.
+
+### Reporting Strategy
+
+The framework is designed to support rich, pipeline-friendly test reporting with the following objectives:
+
+- Clear visibility into test outcomes
+- Actionable failure insights
+- Easy consumption by engineers and reviewers
+- Compatibility with CI/CD artifact storage
+
+Key reporting characteristics include:
+
+- Structured test execution summaries
+- Separation of passed, failed, and skipped tests
+- Support for historical trend analysis when integrated with CI tools
+- Artifact linkage for failures (logs, screenshots, traces)
+
+The reporting approach is intentionally decoupled from test logic, allowing reporting tools to be swapped or extended without impacting test code.
+
+### Logging Architecture
+
+Logging is treated as a first-class component of the framework rather than an afterthought. The logging design supports both UI and API test execution flows.
+
+Logging capabilities include:
+
+- Centralized logging utilities shared across test layers
+- Consistent log formatting for readability and parsing
+- Timestamped entries for execution traceability
+- Log-level separation (INFO, DEBUG, ERROR)
+- Context-rich messages tied to test execution steps
+
+Logs are designed to answer the following questions during failure analysis:
+- What action was performed?
+- Against which system or endpoint?
+- With what input data?
+- What response or behavior was observed?
+
+This approach significantly reduces investigation time and supports asynchronous debugging in CI pipelines.
+
+### UI Observability
+
+For UI test execution, the framework supports automatic artifact generation to aid visual diagnosis:
+
+- Screenshots captured on failure
+- Browser traces (when enabled)
+- Execution metadata associated with test cases
+
+These artifacts provide immediate insight into application state at the time of failure and reduce reliance on manual reproduction.
+
+### API Observability
+
+For API test execution, observability focuses on request and response transparency:
+
+- Request method, endpoint, and payload logging
+- Response status codes and body validation summaries
+- Schema validation results
+- Error response diagnostics
+
+This enables precise identification of backend failures and contract violations.
+
+### CI/CD Artifact Management
+
+The framework is designed so that all relevant execution artifacts can be:
+
+- Generated dynamically during test runs
+- Persisted as CI/CD pipeline artifacts
+- Reviewed post-execution without rerunning tests
+
+Typical artifacts include:
+- Test execution reports
+- Logs
+- Screenshots
+- Trace files
+- Failure metadata
+
+This design aligns with enterprise pipeline standards and supports remote review by distributed teams.
+
+### Observability Extensibility
+
+The observability layer is intentionally extensible to support future enhancements such as:
+
+- Advanced reporting tools (e.g., Allure)
+- Centralized log aggregation platforms
+- Metrics dashboards
+- Test execution analytics
+- Failure pattern analysis
+
+This ensures the framework can evolve alongside organizational maturity without requiring architectural rework.
+
+### Design Rationale
+
+The reporting and logging strategy follows three guiding principles:
+
+1. **Failures should be diagnosable without reruns**
+2. **Artifacts should explain behavior, not just outcomes**
+3. **Observability should scale with test execution**
+
+These principles ensure that automated tests provide meaningful feedback rather than opaque pass/fail signals.
+
+## Roadmap & Extensibility
+
+This framework is intentionally designed as a living system rather than a static automation project. The architecture supports incremental evolution as application complexity, team size, and testing maturity increase.
+
+The roadmap outlined below reflects realistic, enterprise-aligned enhancements that can be introduced without disrupting existing test suites or execution pipelines.
+
+### Planned Enhancements
+
+The following capabilities are natural extensions of the current framework design:
+
+- Advanced reporting integration to provide richer visualization, historical trends, and failure analytics
+- Parallelized test execution strategies to reduce feedback cycle time at scale
+- Expanded contract testing coverage for service-to-service validation
+- Enhanced test data management strategies to support complex scenarios and stateful workflows
+- Improved test environment orchestration for multi-service and cloud-based systems
+
+These enhancements are intentionally staged to ensure stability and maintainability remain primary concerns.
+
+### Scalability Considerations
+
+The framework is built to scale along multiple dimensions:
+
+- **Test volume:** Modular structure supports growth in test coverage without code duplication
+- **Execution environments:** Local, containerized, and CI-based execution paths are first-class citizens
+- **Team collaboration:** Clear ownership, documentation, and conventions support multi-contributor workflows
+- **Technology evolution:** Tooling and integrations can be replaced or upgraded with minimal refactoring
+
+This scalability focus ensures the framework remains viable as organizational needs evolve.
+
+### Extensibility by Design
+
+Key architectural decisions were made to support extensibility:
+
+- Decoupling test logic from configuration and execution context
+- Centralized utilities to avoid cross-cutting concerns leaking into test cases
+- Clear separation between UI, API, and integration testing layers
+- Explicit contracts and schemas to reduce brittle test dependencies
+
+As a result, new test types, tools, or execution strategies can be introduced without rewriting existing tests.
+
+### Quality Engineering Maturity
+
+Beyond automation, the framework is designed to support broader quality engineering practices, including:
+
+- Risk-based testing strategies
+- Incremental automation coverage aligned with business impact
+- Feedback-driven improvements based on failure analysis
+- Alignment with release readiness and deployment confidence
+
+This positions the framework not just as a test suite, but as a quality enablement platform.
+
+### Long-Term Vision
+
+The long-term vision for this framework is to serve as:
+
+- A reusable foundation for multiple projects
+- A reference implementation for enterprise-grade test automation
+- A demonstration of pragmatic, maintainable quality engineering practices
+
+The emphasis remains on delivering meaningful feedback, reducing operational friction, and enabling confident software delivery at scale.
 
 ## Folder Structure & Design Rationale
 
