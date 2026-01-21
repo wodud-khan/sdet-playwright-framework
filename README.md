@@ -1,20 +1,35 @@
-## Quick Start (5 Minutes)
+# 🎭 SDET Playwright Framework
+
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-Automation-green?style=for-the-badge&logo=playwright&logoColor=white)
+![Pytest](https://img.shields.io/badge/Pytest-Framework-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
+![Build](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)
+
+A modular, scalable test automation architecture designed to support **UI, API, and Integration testing** within a single framework. This repository demonstrates a production-style quality engineering system reflecting real-world enterprise constraints, including scalability, maintainability, and CI/CD readiness.
+
+---
+
+## ⚡ Quick Start (5 Minutes)
 
 This section provides the fastest path to clone the repository, install dependencies, and execute a sample test suite.
 
 ```bash
-git clone https://github.com/wodud-khan/sdet-playwright-framework.git
+# 1. Clone the repository
+git clone [https://github.com/wodud-khan/sdet-playwright-framework.git](https://github.com/wodud-khan/sdet-playwright-framework.git)
 cd sdet-playwright-framework
+
+# 2. Set up Virtual Environment
 python -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
+
+# 3. Install Dependencies
 pip install -r requirements.txt
 playwright install
-```
 
-```bash
+**Start the Mock Service (Terminal 1)**
 uvicorn mock_services.auth_service.main:app --port 8001
-```
-```bash
+
+**Run API Tests (Terminal 2)**
 pytest tests/api
 ```
 
@@ -63,9 +78,8 @@ Some API test suites in this framework rely on a locally running mock authentica
 
 Before running API tests, start the mock service in a separate terminal session:
 
-```bash
 uvicorn mock_services.auth_service.main:app --port 8001
-```
+
 ### Running Tests Locally
 
 - Run all tests:
