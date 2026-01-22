@@ -33,6 +33,47 @@ uvicorn mock_services.auth_service.main:app --port 8001
 pytest tests/api
 ```
 
+## Project Structure
+
+```bash
+sdet-playwright-framework/
+│
+├── api/                    # API client, endpoints, schemas, and configurations
+│   ├── client/
+│   ├── config/
+│   ├── endpoints/
+│   └── schemas/
+│
+├── pages/                 # Playwright Page Object Model (POM) implementation
+│
+├── tests/
+│   ├── api/               # API test suites (auth, users, orders, integration)
+│   ├── ui/                # UI end-to-end and regression tests
+│   └── data/              # Test data management
+│
+├── utils/                 # Shared utilities, helpers, logging, schema validation
+│
+├── mock_services/         # Local mock API services for test isolation
+│
+├── config/                # Environment & framework configuration
+│
+├── contracts/             # API contract validation schemas
+│
+├── observability/         # Logging, metrics, and failure intelligence
+│
+├── artifacts/             # Screenshots and video recordings from test execution
+│
+├── k8s/                   # Kubernetes test job manifests
+│
+├── ownership/             # Test ownership and responsibility mapping
+│
+├── Dockerfile             # Containerized execution support
+├── Jenkinsfile            # CI pipeline automation
+├── pytest.ini             # Pytest execution configuration
+├── requirements.txt       # Python dependency definitions
+└── README.md              # Project documentation
+```
+
 ## How to Run Tests
 
 This framework supports local execution and CI-ready test runs for both UI and API automation. The steps below outline how to set up the environment and execute tests consistently.
