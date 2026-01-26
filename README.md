@@ -15,7 +15,7 @@ This section provides the fastest path to clone the repository, install dependen
 
 ```bash
 # 1. Clone the repository
-git clone [https://github.com/wodud-khan/sdet-playwright-framework.git](https://github.com/wodud-khan/sdet-playwright-framework.git)
+git clone https://github.com/wodud-khan/sdet-playwright-framework.git
 cd sdet-playwright-framework
 
 # 2. Set up Virtual Environment
