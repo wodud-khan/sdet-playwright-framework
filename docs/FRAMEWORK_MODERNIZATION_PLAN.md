@@ -13,7 +13,9 @@ Implementation status:
 - Modernization direction: approved
 - Checkpoint 0: approved
 - Checkpoint 1: implemented and validated with the locked uv workflow
-- Checkpoint 2: partially implemented and incomplete
+- Checkpoint 2: application foundation validated through isolated unit and lightweight
+  SQLite checks; PostgreSQL/Compose configuration implemented but runtime validation is
+  blocked, so the checkpoint remains incomplete
 - Checkpoints 3–7: pending
 - Docker and PostgreSQL runtime validation: blocked because Docker is not installed
 
