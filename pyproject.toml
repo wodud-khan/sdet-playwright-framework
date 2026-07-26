@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=75,<82"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdet-playwright-framework"
+version = "0.2.0"
+description = "A small, evidence-based quality engineering portfolio."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.116,<1",
+    "jsonschema>=4.25,<5",
+    "psycopg[binary]>=3.2,<4",
+    "pydantic>=2.11,<3",
+    "requests>=2.32,<3",
+    "uvicorn>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.17,<2",
+    "playwright>=1.54,<2",
+    "pytest>=8.4,<9",
+    "pytest-html>=4.1,<5",
+    "pytest-playwright>=0.7,<1",
+    "pytest-xdist>=3.8,<4",
+    "ruff>=0.12,<1",
+    "types-requests>=2.32,<3",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+demo_app = ["static/*"]
+
+[tool.pytest.ini_options]
+minversion = "8.4"
+testpaths = ["tests"]
+addopts = [
+    "--strict-config",
+    "--strict-markers",
+    "-ra",
+]
+markers = [
+    "unit: isolated logic tests",
+    "api: REST API behavior tests",
+    "contract: JSON response contract tests",
+    "database: direct database validation tests",
+    "integration: tests crossing service boundaries",
+    "ui: focused browser behavior tests",
+    "e2e: complete user workflow tests",
+    "smoke: small critical-path suite",
+]
+filterwarnings = [
+    "error",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [
+    "artifacts",
+    "test-results",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "SIM",
+    "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["demo_app", "test_framework"]
+mypy_path = "src"
+warn_unused_configs = true

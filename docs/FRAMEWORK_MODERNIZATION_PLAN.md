@@ -12,7 +12,7 @@ Implementation status:
 - Phase 0 repository audit: completed; no implementation occurred during that audit
 - Modernization direction: approved
 - Checkpoint 0: approved
-- Checkpoint 1: partially implemented and partially validated
+- Checkpoint 1: implemented and validated with the locked uv workflow
 - Checkpoint 2: partially implemented and incomplete
 - Checkpoints 3–7: pending
 - Docker and PostgreSQL runtime validation: blocked because Docker is not installed
@@ -20,6 +20,8 @@ Implementation status:
 Observed evidence for the partial candidate:
 
 - Python 3.12.11 environment created through uv
+- a fresh repository-local environment installed successfully with
+  `uv sync --extra dev --locked --python 3.12`
 - 49 installed packages passed `uv pip check`
 - six unit tests collected and passed
 - Ruff lint and formatting checks passed
@@ -29,9 +31,6 @@ Observed evidence for the partial candidate:
 
 Incomplete or blocked evidence:
 
-- the documented pip-based commands do not work in the current uv environment because it
-  intentionally has no pip module
-- a fresh-clone install has not yet been replayed from an empty environment
 - no PostgreSQL runtime, Docker build, or Docker Compose command has executed
 - API, contract, direct PostgreSQL, integration, browser, E2E, parallel, cross-browser,
   diagnostics, reporting, and CI validation remain pending
@@ -301,9 +300,8 @@ Deliverables:
 Validation:
 
 ```bash
-python3.12 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e ".[dev]"
+uv sync --extra dev --locked --python 3.12
+uv lock --check
 .venv/bin/python -m pytest --collect-only -q
 .venv/bin/ruff check .
 .venv/bin/ruff format --check .
