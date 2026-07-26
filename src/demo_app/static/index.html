@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Order Lab</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Controlled system under test</p>
+      <h1>Order Lab</h1>
+      <p class="intro">
+        Submit one deterministic order through the UI, REST API, and database workflow.
+      </p>
+
+      <form id="order-form">
+        <label for="customer-name">Customer name</label>
+        <input
+          id="customer-name"
+          name="customer_name"
+          data-testid="customer-name"
+          minlength="2"
+          maxlength="80"
+          required
+        >
+
+        <label for="item-name">Item name</label>
+        <input
+          id="item-name"
+          name="item_name"
+          data-testid="item-name"
+          minlength="2"
+          maxlength="80"
+          value="Quality Notebook"
+          required
+        >
+
+        <label for="quantity">Quantity</label>
+        <input
+          id="quantity"
+          name="quantity"
+          data-testid="quantity"
+          type="number"
+          min="1"
+          max="100"
+          value="1"
+          required
+        >
+
+        <button type="submit">Create order</button>
+      </form>
+
+      <section id="order-result" aria-labelledby="result-heading" hidden>
+        <h2 id="result-heading">Order created</h2>
+        <dl>
+          <div>
+            <dt>Order ID</dt>
+            <dd data-testid="order-id"></dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd data-testid="order-status"></dd>
+          </div>
+          <div>
+            <dt>Total</dt>
+            <dd data-testid="order-total"></dd>
+          </div>
+        </dl>
+      </section>
+
+      <p id="form-status" role="status" aria-live="polite"></p>
+    </main>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
