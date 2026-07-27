@@ -34,6 +34,8 @@ coverage.xml
 
 # Pytest
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Node
 node_modules/

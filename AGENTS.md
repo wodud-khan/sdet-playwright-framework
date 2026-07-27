@@ -42,7 +42,7 @@ Run the applicable gates before handing off a checkpoint:
 .venv/bin/python -m pytest --collect-only -q
 .venv/bin/ruff check .
 .venv/bin/ruff format --check .
-.venv/bin/mypy src
+.venv/bin/mypy src scripts
 .venv/bin/python -m pytest -q
 git diff --check
 ```

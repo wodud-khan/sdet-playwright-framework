@@ -23,7 +23,12 @@ Implementation status:
 - Checkpoint 5: diagnostics, HTML/JUnit reporting, bounded unit/UI parallelism, and a
   three-browser smoke check validated against isolated/fallback paths; PostgreSQL-backed
   browser evidence remains blocked
-- Checkpoints 6–7: pending
+- Checkpoint 6: the least-privilege GitHub Actions workflow is implemented and its YAML
+  and non-Docker commands are statically validated; Compose and hosted execution are
+  blocked, so the checkpoint remains incomplete
+- Checkpoint 7: public architecture, strategy, CI, flaky-test, AI, troubleshooting,
+  interview, claims, and final-validation documentation is implemented; final claim
+  promotion remains blocked on PostgreSQL, Docker, and hosted CI evidence
 - Docker and PostgreSQL runtime validation: blocked because Docker is not installed
 
 Observed evidence for the partial candidate:
@@ -46,8 +51,9 @@ Observed evidence for the partial candidate:
 Incomplete or blocked evidence:
 
 - no PostgreSQL runtime, Docker build, or Docker Compose command has executed
-- API, contract, direct PostgreSQL, integration, browser, E2E, parallel, cross-browser,
-  diagnostics, reporting, and CI validation remain pending
+- API, contract, direct PostgreSQL, integration, PostgreSQL-backed browser/E2E,
+  PostgreSQL-backed parallel/cross-browser, Compose-log, and hosted CI validation remain
+  pending
 
 No implementation checkpoint is complete merely because files were created. A capability
 is public evidence only after its required runtime validation passes.
@@ -95,31 +101,31 @@ content.
 |---|---|---|
 | `.flake8` | Remain deleted | Ruff configuration in `pyproject.toml` is the stronger equivalent |
 | `Jenkinsfile` | Remain deleted | Unvalidated secondary CI inflated scope; GitHub Actions is the approved public path |
-| `api/client/*` and `api/endpoints/*` | Legacy files remain deleted; migrate useful client/session concepts | A typed, injected client under `src/test_framework/api/` will replace hard-coded external URLs |
+| `api/client/*` and `api/endpoints/*` | Legacy files remain deleted; useful client/session concepts migrated | A typed, injected client under `src/test_framework/api/` replaced hard-coded external URLs |
 | `api/config/api_capabilities.py` | Remain deleted | It documented a removed third-party API rather than executable capability |
 | `api/schemas/*` | Remain deleted | The unused Python user schema conflicted with the tracked JSON contract |
 | `config/env.py` and empty `config/settings.py` | Remain deleted | `src/test_framework/config.py` is the validated replacement |
-| legacy `conftest.py` | Remain deleted; replace | A new fixture layer will use official pytest-playwright fixtures and safe finalizers |
+| legacy `conftest.py` | Remain deleted; replaced | The new fixture layer uses official pytest-playwright fixtures and safe finalizers |
 | `k8s/test-job.yaml` | Remain deleted | Kubernetes is outside the focused portfolio |
 | `mock_services/auth_service/*` | Remain deleted | The controlled order application is a stronger owned system under test |
 | `observability/metadata.py` and `ownership/test_ownership.yaml` | Remain deleted | Both were decorative and had no consuming workflow |
-| `pages/*` | Legacy files remain deleted; migrate the page-object concept | New semantic page/component objects will target the controlled UI |
+| `pages/*` | Legacy files remain deleted; page-object concept migrated | The semantic `OrderPage` targets the controlled UI |
 | `pytest.ini` | Remain deleted | Pytest configuration moves to `pyproject.toml`; blanket reruns and implicit parallelism stay removed |
-| `requirements.txt` | Remain deleted | One uv-based locked workflow will replace unbounded incomplete requirements |
-| legacy `tests/api/*` | Remain deleted; replace | New API, contract, database, and integration tests will use the controlled app and PostgreSQL |
-| legacy `tests/ui/*` | Remain deleted; replace | New Playwright tests will use semantic locators and the controlled UI |
-| `tests/data/users.json` | Remain deleted | Worker-aware factories will replace unused shared static data |
+| `requirements.txt` | Remain deleted | One uv-based locked workflow replaced unbounded incomplete requirements |
+| legacy `tests/api/*` | Remain deleted; replaced | New API, contract, database, and integration tests use the controlled app and PostgreSQL |
+| legacy `tests/ui/*` | Remain deleted; replaced | New Playwright tests use semantic locators and the controlled UI |
+| `tests/data/users.json` | Remain deleted | Worker-aware factories replaced unused shared static data |
 | `utils/api_helpers.py` and `utils/schema_validator.py` | Migrate only useful behavior | JSON response and schema checks belong in typed clients/contract helpers |
-| `utils/data_factory.py` | Replace | A unique run- and worker-aware factory will replace shared credentials |
+| `utils/data_factory.py` | Replaced | A unique run- and worker-aware factory replaced shared credentials |
 | `utils/failure_intel.py` | Remain deleted | String matching did not provide actionable diagnostics |
-| `utils/logger.py` | Replace | Structured, redacted, test-scoped evidence will replace a shared rotating file |
+| `utils/logger.py` | Replaced | Structured, redacted, test-scoped evidence replaced a shared rotating file |
 | empty package files under removed legacy directories | Remain deleted | No empty directories are retained for appearance |
 
-`README.md` remains from the baseline until executable evidence is mature enough to
-replace its unsupported claims accurately.
+`README.md` was replaced after the non-Docker evidence matured enough to separate
+demonstrated behavior from PostgreSQL/Docker/CI-blocked behavior.
 
-The still-tracked `contracts/user_schema.json` is not part of the deletion count. It will
-be replaced by one canonical order contract when the contract suite is implemented.
+The baseline `contracts/user_schema.json` was not part of the initial deletion count. It
+was later replaced by the canonical order contract used by the contract suite.
 
 ### Database priority
 
@@ -200,7 +206,10 @@ Removal means deletion in an implementation commit; Git history will retain prio
 | `docs/TEST_STRATEGY.md` and `docs/TROUBLESHOOTING.md` | Explain risk coverage, commands, evidence, and common failure recovery |
 | GitHub Actions quality workflow | Demonstrate reproducible gates and artifact retention |
 
-## Proposed directory structure
+## Initial proposed directory structure
+
+This was the approved starting point, not an inflexible specification. The implemented
+shape omits empty or unnecessary categories and is documented in `docs/ARCHITECTURE.md`.
 
 ```text
 .
@@ -243,7 +252,7 @@ Removal means deletion in an implementation commit; Git history will retain prio
 
 Do not create an empty directory simply to match this proposal.
 
-## Proposed tools
+## Initially proposed tools
 
 Exact versions will be chosen and validated during approved implementation.
 
@@ -446,22 +455,21 @@ Deliverables:
 - run lint, format, types, unit, service-layer tests, Chromium E2E, and browser smoke
 - use the same Compose lifecycle as local execution
 - upload reports, browser artifacts, app logs, and Compose logs under `if: always()`
-- validate the containerized test command
+- run the host test environment against the same Compose app/database ports used in CI
 
 Validation:
 
 ```bash
-docker compose run --rm tests .venv/bin/python -m pytest -m smoke --browser chromium
+docker compose up --detach --build --wait
+.venv/bin/python scripts/wait_for_services.py --timeout 30
+.venv/bin/python -m pytest tests/api tests/contract tests/database tests/integration -q
+.venv/bin/python -m pytest tests/ui tests/e2e --browser chromium -q
+.venv/bin/python -m pytest -m smoke \
+  --browser chromium --browser firefox --browser webkit -q
 docker compose logs --no-color
-.venv/bin/ruff check .
-.venv/bin/ruff format --check .
-.venv/bin/mypy src
-.venv/bin/python -m pytest -q
+docker compose down
 git diff --check
 ```
-
-The container command may be adjusted to the image's internal Python path; the final
-README and workflow must use the exact validated form.
 
 Exit criterion: local commands and CI commands agree, all required jobs pass, and failure
 artifacts are retained.
@@ -517,7 +525,7 @@ These are the final named commands the implementation should converge on. A smal
 | Types | `.venv/bin/mypy src` |
 | Compose validity | `docker compose config` |
 | Compose health | `docker compose up -d && .venv/bin/python scripts/wait_for_services.py` |
-| Container smoke | `docker compose run --rm tests python -m pytest -m smoke --browser chromium` |
+| Host-against-Compose smoke | `.venv/bin/python -m pytest -m smoke --browser chromium` |
 | Whitespace | `git diff --check` |
 
 No destructive volume removal should be embedded in the ordinary validation command.
