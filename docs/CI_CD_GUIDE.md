@@ -83,23 +83,40 @@ The CI service lifecycle is represented locally by:
 ```bash
 uv sync --extra dev --locked --python 3.12
 uv run playwright install chromium firefox webkit
-docker compose up --detach --build --wait
+docker compose config
+docker compose build --no-cache
+docker compose up --detach --wait
 .venv/bin/python scripts/wait_for_services.py --timeout 30
 ```
 
 Tests run from the host against `127.0.0.1:8000` and `127.0.0.1:5432` in both
 environments. The app and database run inside Compose.
 
+Local parity was demonstrated on Apple Silicon with Docker Desktop 4.83.0, Engine 29.6.2,
+Compose 5.3.1, and PostgreSQL 17.10 Bookworm. The no-cache build, Compose health,
+readiness, and safe shutdown passed. The workflow-equivalent test intent passed locally:
+
+- 28 tests collected; Ruff, formatting, and Mypy passed
+- 18 unit tests passed
+- API 4, contract 1, database 1, and integration 1 passed independently
+- 7 service cases passed with two workers
+- focused Chromium UI 2 and full Chromium E2E 1 passed
+- 3 smoke cases passed across Chromium, Firefox, and WebKit
+- the failure-evidence bundle and exact-ID cleanup were demonstrated
+
 ## Current validation boundary
 
-The workflow file parses locally and its non-Docker commands match locally validated
-commands. It has not been pushed or executed. Therefore:
+The local results prove the committed Dockerfile, Compose stack, PostgreSQL-backed test
+behavior, and command design on the observed Mac runtime. The workflow file has not been
+pushed or executed, so local results do not prove GitHub-hosted runner behavior,
+action execution, caches, artifact upload, or workflow conclusion.
+
+Therefore:
 
 - do not claim a passing GitHub Actions pipeline
-- do not use the workflow file as proof that the image builds
-- do not use it as proof that PostgreSQL or the E2E path passes
+- do not present local Docker success as a hosted workflow result
 - record the first hosted run ID, result, and retained artifacts in
-  `FINAL_VALIDATION_REPORT.md` before changing those classifications
+  `FINAL_VALIDATION_REPORT.md` before making a CI-success claim
 
 ## Failure triage
 

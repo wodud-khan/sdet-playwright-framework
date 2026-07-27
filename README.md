@@ -2,56 +2,57 @@
 
 A focused quality-engineering portfolio built around a deliberately small order
 application. The repository demonstrates test architecture and engineering decisions
-across Python, Pytest, Playwright, REST, contracts, persistence, diagnostics, reporting,
-Docker Compose, and GitHub Actions.
+across Python, Pytest, Playwright, REST, JSON Schema, PostgreSQL, diagnostics, reporting,
+Docker Compose, and GitHub Actions configuration.
 
-This modernization is still in progress. The isolated framework, unit tests, lightweight
-UI path, cross-browser smoke path, bounded parallel checks, and controlled failure
-diagnostics have run locally. PostgreSQL, Docker Compose, the PostgreSQL-backed service
-suites, the full UI-to-API-to-database workflow, and the GitHub-hosted workflow are
-implemented but not yet runtime-validated because Docker is not installed locally.
+The primary local stack is demonstrated end to end: Docker Compose builds and starts the
+FastAPI application and PostgreSQL 17, all service and browser layers pass, bounded
+parallel runs do not collide, all three supported browser engines pass smoke coverage,
+and exact-ID cleanup works even after an intentional assertion failure.
 
 ## What the project contains
 
 - A minimal FastAPI order UI and REST API under `src/demo_app`
 - PostgreSQL as the primary integration and end-to-end persistence runtime
-- A narrow SQLite adapter used only for isolated tests and an explicit UI fallback
 - Typed API and direct PostgreSQL clients
 - Run- and worker-aware test data with exact-record cleanup
 - Separate unit, API, contract, database, integration, UI, and E2E suites
 - Official pytest-playwright browser fixtures, semantic locators, and web-first assertions
-- Failure-only browser/API evidence plus HTML, JUnit, trace, screenshot, and video output
+- Failure-only browser/API evidence plus HTML, JUnit, trace, screenshot, video, and logs
 - Locked Python 3.12 dependencies through uv
-- A two-job GitHub Actions workflow and a health-checked Compose stack
+- A non-root application image and health-checked Docker Compose stack
+- A least-privilege, SHA-pinned GitHub Actions workflow ready for hosted validation
 
-## Current evidence
+## Demonstrated evidence
 
-| Capability | Current status |
+| Capability | Result |
 |---|---|
-| Fresh locked Python 3.12 installation | Demonstrated |
-| 28-test collection | Demonstrated |
-| Ruff lint/format and strict Mypy | Demonstrated |
-| 18 isolated unit tests | Demonstrated |
-| Focused Chromium UI through explicit SQLite fallback | Demonstrated |
-| Chromium, Firefox, and WebKit fallback smoke | Demonstrated |
-| Bounded two-worker unit and focused UI runs | Demonstrated |
-| HTML/JUnit and intentional browser-failure evidence | Demonstrated |
-| PostgreSQL app and direct database behavior | Implemented; runtime blocked |
-| API, contract, database, and integration suites | Implemented; runtime blocked |
-| Full UI-to-API-to-PostgreSQL E2E | Implemented; runtime blocked |
-| Docker image and Compose lifecycle | Implemented; runtime blocked |
-| GitHub Actions execution | Implemented; not yet executed |
+| Locked Python 3.12 installation and 28-test collection | Passed |
+| Ruff lint/format and strict Mypy | Passed |
+| Unit | 18 passed |
+| API | 4 passed |
+| JSON contract | 1 passed |
+| Direct PostgreSQL | 1 passed |
+| API-to-PostgreSQL integration | 1 passed |
+| Focused Chromium UI | 2 passed |
+| Chromium UI-to-API-to-PostgreSQL E2E | 1 passed |
+| Two-worker service layer | 7 passed |
+| Two-worker Chromium UI | 2 passed |
+| PostgreSQL-backed Chromium/Firefox/WebKit smoke | 3 passed |
+| Docker no-cache build and Compose health lifecycle | Passed |
+| Intentional-failure cleanup and diagnostic evidence drills | Passed |
+| Hosted GitHub Actions execution | Not executed |
 
-See [FINAL_VALIDATION_REPORT.md](docs/FINAL_VALIDATION_REPORT.md) for exact evidence and
-claim boundaries.
+See [FINAL_VALIDATION_REPORT.md](docs/FINAL_VALIDATION_REPORT.md) for exact commands,
+runtime versions, evidence boundaries, and remaining limitations.
 
 ## Prerequisites
 
 - macOS or Linux
 - [uv](https://docs.astral.sh/uv/) available on `PATH`
-- Docker with the Compose plugin for the primary PostgreSQL workflow
+- Docker with the Compose plugin
 
-Python 3.12 is the supported runtime. uv may obtain that runtime when needed.
+Python 3.12 is the supported project runtime. uv may obtain it when needed.
 
 ## Install
 
@@ -62,10 +63,9 @@ uv sync --extra dev --locked --python 3.12
 uv run playwright install chromium firefox webkit
 ```
 
-The committed `uv.lock` is the single dependency source for local setup and CI. The
-absence of `pip` inside a uv-managed environment is intentional.
+The committed `uv.lock` is the dependency source for local setup and CI.
 
-## Fast validated checks
+## Fast checks
 
 These commands do not need Docker:
 
@@ -77,27 +77,26 @@ These commands do not need Docker:
 .venv/bin/python -m pytest tests/unit -q
 ```
 
-Generate portable unit reports:
-
-```bash
-.venv/bin/python -m pytest tests/unit -q -n 2 \
-  --html=artifacts/unit-report.html \
-  --self-contained-html \
-  --junitxml=artifacts/unit-junit.xml
-```
-
 ## Primary PostgreSQL workflow
 
-The following is the intended local workflow, but it remains unvalidated on this machine
-until Docker is installed:
+Build and start the controlled stack:
 
 ```bash
 docker compose config
-docker compose up --detach --build --wait
+docker compose build --no-cache
+docker compose up --detach --wait
+docker compose ps
 .venv/bin/python scripts/wait_for_services.py --timeout 30
+curl --fail --silent http://127.0.0.1:8000/health
+```
 
+Configure host-side tests:
+
+```bash
 export APP_BASE_URL=http://127.0.0.1:8000
 export DATABASE_URL=postgresql://portfolio:local-demo-password@127.0.0.1:5432/portfolio
+export API_TIMEOUT_SECONDS=5
+export ARTIFACTS_DIR=artifacts
 export TEST_RUN_ID=local
 ```
 
@@ -112,31 +111,58 @@ Run each layer independently:
 .venv/bin/python -m pytest tests/e2e --browser chromium -q
 ```
 
-Run the isolation and browser proofs:
+Run bounded parallel and browser proofs:
 
 ```bash
 .venv/bin/python -m pytest \
   -m "api or contract or database or integration" -n 2 -q
 
+.venv/bin/python -m pytest tests/ui -n 2 --browser chromium -q
+
 .venv/bin/python -m pytest -m smoke \
   --browser chromium --browser firefox --browser webkit -q
 ```
 
-Stop the stack without deleting its named database volume:
+Stop the containers and network without deleting the named database volume:
 
 ```bash
+docker compose logs --no-color
 docker compose down
 ```
 
-Do not interpret these PostgreSQL and Compose commands as passing evidence until their
-results are recorded in the final validation report.
+Do not add `-v` to ordinary shutdown.
 
-## Explicit lightweight UI fallback
+## Failure evidence
 
-SQLite is not the primary database. This fallback exists only for quick UI development
-when PostgreSQL is unavailable.
+For browser tests, enable native Playwright and portable report output:
 
-In one terminal:
+```bash
+.venv/bin/python -m pytest tests/ui --browser chromium \
+  --tracing=retain-on-failure \
+  --screenshot=only-on-failure \
+  --video=retain-on-failure \
+  --output=artifacts/playwright \
+  --html=artifacts/browser-report.html \
+  --self-contained-html \
+  --junitxml=artifacts/browser-junit.xml
+```
+
+Failure evidence can include:
+
+- Playwright trace, screenshot, and video
+- console, page, failed-request, and error-response metadata
+- body-free API method/URL/status/duration metadata
+- Pytest HTML and JUnit reports
+- application, PostgreSQL, and Compose logs
+
+Generated evidence stays under ignored paths. Authorization headers, cookies, request
+bodies with private data, environment dumps, private local files, and personal paths are
+excluded.
+
+## Optional lightweight development path
+
+SQLite is available only for isolated logic and quick focused-UI development when the
+primary stack is intentionally not running. It is not an integration or E2E substitute.
 
 ```bash
 mkdir -p artifacts
@@ -153,34 +179,6 @@ DATABASE_URL=sqlite:///artifacts/ui-fallback.sqlite3 \
   --allow-sqlite-ui-fallback --browser chromium -q
 ```
 
-This command cannot support PostgreSQL, database-integration, Docker, or full E2E claims.
-
-## Failure evidence
-
-For browser tests, enable native Playwright evidence:
-
-```bash
-.venv/bin/python -m pytest tests/ui --browser chromium \
-  --tracing=retain-on-failure \
-  --screenshot=only-on-failure \
-  --video=retain-on-failure \
-  --output=artifacts/playwright \
-  --html=artifacts/browser-report.html \
-  --self-contained-html \
-  --junitxml=artifacts/browser-junit.xml
-```
-
-Failure evidence may include:
-
-- trace archives, screenshots, and video from Playwright
-- console, page, failed-request, and error-response metadata
-- body-free API exchange metadata
-- Pytest HTML and JUnit reports
-- application and Compose logs in CI
-
-Generated evidence stays under ignored paths. Authorization headers, cookies, request
-bodies, environment dumps, and private local files are not collected.
-
 ## Test structure
 
 ```text
@@ -194,8 +192,8 @@ tests/
 └── e2e/           # UI-to-API-to-PostgreSQL workflow
 ```
 
-The demo application is intentionally smaller than the test framework. Core tests do not
-call public websites or require external accounts.
+The controlled application is intentionally smaller than the test framework. Core tests
+do not call public websites or require external accounts.
 
 ## Documentation
 
@@ -211,11 +209,10 @@ call public websites or require external accounts.
 
 ## Limitations
 
-- Docker and PostgreSQL execution are currently blocked by the missing local Docker
-  runtime.
-- The GitHub Actions workflow is committed but has not been pushed or executed.
+- The GitHub Actions workflow has not been pushed or executed; local success is not a
+  hosted-CI result.
+- Positive order schema coverage is present; a dedicated error-response schema is not.
+- The demo app initializes its small schema directly; migration tooling is outside scope.
 - Authentication, cloud deployment, performance, security, accessibility, and visual
-  regression programs are intentionally outside the current scope.
-- The database schema is initialized by the demo app; production migration tooling is not
-  represented.
+  regression programs are intentionally outside scope.
 - This is a portfolio system, not a production application or enterprise framework.

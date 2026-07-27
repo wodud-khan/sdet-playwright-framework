@@ -13,47 +13,42 @@ Implementation status:
 - Modernization direction: approved
 - Checkpoint 0: approved
 - Checkpoint 1: implemented and validated with the locked uv workflow
-- Checkpoint 2: application foundation validated through isolated unit and lightweight
-  SQLite checks; PostgreSQL/Compose configuration implemented but runtime validation is
-  blocked, so the checkpoint remains incomplete
-- Checkpoint 3: API, contract, direct PostgreSQL, and integration test layers implemented;
-  collection and isolated framework tests pass, but service execution is blocked
-- Checkpoint 4: focused Playwright UI and the PostgreSQL E2E workflow implemented; focused
-  UI passes only against the explicit SQLite fallback, while E2E execution is blocked
-- Checkpoint 5: diagnostics, HTML/JUnit reporting, bounded unit/UI parallelism, and a
-  three-browser smoke check validated against isolated/fallback paths; PostgreSQL-backed
-  browser evidence remains blocked
-- Checkpoint 6: the least-privilege GitHub Actions workflow is implemented and its YAML
-  and non-Docker commands are statically validated; Compose and hosted execution are
-  blocked, so the checkpoint remains incomplete
+- Checkpoint 2: implemented and demonstrated through a no-cache application build,
+  healthy FastAPI/PostgreSQL Compose lifecycle, and bounded readiness probe
+- Checkpoint 3: implemented and demonstrated; API, contract, direct PostgreSQL, and
+  integration layers passed independently and with two bounded workers
+- Checkpoint 4: implemented and demonstrated; focused Chromium UI and the complete
+  UI-to-API-to-PostgreSQL workflow passed, including exact database absence
+- Checkpoint 5: implemented and demonstrated; primary-stack three-browser smoke,
+  two-worker UI execution, intentional-failure cleanup, and the privacy-audited
+  trace/screenshot/video/browser/API/HTML/JUnit/log bundle passed
+- Checkpoint 6: local container execution and CI-command parity are demonstrated; the
+  least-privilege GitHub Actions workflow is implemented but has not run on a hosted
+  runner
 - Checkpoint 7: public architecture, strategy, CI, flaky-test, AI, troubleshooting,
-  interview, claims, and final-validation documentation is implemented; final claim
-  promotion remains blocked on PostgreSQL, Docker, and hosted CI evidence
-- Docker and PostgreSQL runtime validation: blocked because Docker is not installed
+  interview, claims, and final-validation documentation reflects the demonstrated local
+  runtime and preserves the hosted-CI boundary
+- Docker and PostgreSQL local runtime validation: completed
 
-Observed evidence for the partial candidate:
+Observed final local evidence:
 
 - Python 3.12.11 environment created through uv
-- a fresh repository-local environment installed successfully with
-  `uv sync --extra dev --locked --python 3.12`
-- 49 installed packages passed `uv pip check`
-- 28 tests collect after Checkpoint 5; 18 isolated unit cases pass
-- focused fallback UI: two Chromium cases pass, including a two-worker bounded run
-- fallback browser smoke: one case passes on Chromium, Firefox, and WebKit
-- an intentional closed-port failure retained structured browser JSON, screenshot, trace,
-  and video evidence
-- self-contained HTML and JUnit unit reports were generated successfully
-- Ruff lint and formatting checks passed
-- Mypy passed for the current source and readiness script
-- a local SQLite-backed health/create/read/delete flow returned expected HTTP statuses
-- Compose YAML parsed successfully
+- Docker Desktop 4.83.0, Engine 29.6.2, and Compose 5.3.1 runtime checks passed
+- `postgres:17.10-bookworm` ran PostgreSQL 17.10 on ARM64
+- no-cache application build, Compose health, readiness, logs, and safe shutdown passed
+- 28 tests collected; Ruff lint/format and strict Mypy passed
+- 18 unit, 4 API, 1 contract, 1 database, 1 integration, 2 focused UI, and 1 full E2E
+  case passed in their independent primary-stack runs
+- 7 service cases and 2 Chromium UI cases passed with two bounded workers
+- 3 PostgreSQL-backed smoke cases passed across Chromium, Firefox, and WebKit
+- exact-ID cleanup passed during the E2E and after an intentional intermediate failure
+- a PostgreSQL-backed browser failure retained and privacy-audited the complete evidence
+  bundle
+- Compose stopped without deleting the named PostgreSQL volume
 
-Incomplete or blocked evidence:
+Remaining execution boundary:
 
-- no PostgreSQL runtime, Docker build, or Docker Compose command has executed
-- API, contract, direct PostgreSQL, integration, PostgreSQL-backed browser/E2E,
-  PostgreSQL-backed parallel/cross-browser, Compose-log, and hosted CI validation remain
-  pending
+- the GitHub Actions workflow has not been pushed or executed on a hosted runner
 
 No implementation checkpoint is complete merely because files were created. A capability
 is public evidence only after its required runtime validation passes.
@@ -121,8 +116,8 @@ content.
 | `utils/logger.py` | Replaced | Structured, redacted, test-scoped evidence replaced a shared rotating file |
 | empty package files under removed legacy directories | Remain deleted | No empty directories are retained for appearance |
 
-`README.md` was replaced after the non-Docker evidence matured enough to separate
-demonstrated behavior from PostgreSQL/Docker/CI-blocked behavior.
+`README.md` was replaced as evidence matured and now separates demonstrated local
+Docker/PostgreSQL behavior from the unexecuted hosted-CI boundary.
 
 The baseline `contracts/user_schema.json` was not part of the initial deletion count. It
 was later replaced by the canonical order contract used by the contract suite.
@@ -471,8 +466,9 @@ docker compose down
 git diff --check
 ```
 
-Exit criterion: local commands and CI commands agree, all required jobs pass, and failure
-artifacts are retained.
+Local container execution and command parity meet the local portion of this checkpoint.
+The checkpoint closes fully only after both hosted jobs pass and their retained artifacts
+are reviewed.
 
 ### Checkpoint 7 — Documentation and final claim audit
 
@@ -518,14 +514,14 @@ These are the final named commands the implementation should converge on. A smal
 | Integration | `.venv/bin/python -m pytest tests/integration -q` |
 | UI | `.venv/bin/python -m pytest tests/ui --browser chromium -q` |
 | End-to-end | `.venv/bin/python -m pytest tests/e2e --browser chromium -q` |
-| Cross-browser smoke | `.venv/bin/python -m pytest -m smoke --browser chromium --browser firefox --browser webkit` |
-| Parallel service tests | `.venv/bin/python -m pytest -m "not ui and not e2e" -n 2` |
+| Cross-browser smoke | `.venv/bin/python -m pytest -m smoke --browser chromium --browser firefox --browser webkit -q` |
+| Parallel service tests | `.venv/bin/python -m pytest -m "api or contract or database or integration" -n 2 -q` |
 | Lint | `.venv/bin/ruff check .` |
 | Format | `.venv/bin/ruff format --check .` |
-| Types | `.venv/bin/mypy src` |
+| Types | `.venv/bin/mypy src scripts` |
 | Compose validity | `docker compose config` |
-| Compose health | `docker compose up -d && .venv/bin/python scripts/wait_for_services.py` |
-| Host-against-Compose smoke | `.venv/bin/python -m pytest -m smoke --browser chromium` |
+| Compose health | `docker compose up --detach --wait && .venv/bin/python scripts/wait_for_services.py --timeout 30` |
+| Host-against-Compose smoke | `.venv/bin/python -m pytest -m smoke --browser chromium -q` |
 | Whitespace | `git diff --check` |
 
 No destructive volume removal should be embedded in the ordinary validation command.
@@ -536,9 +532,9 @@ project volumes.
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Local Docker/Compose is unavailable | Controlled stack cannot be validated locally | Obtain explicit installation approval or use an already approved environment; do not claim success from CI alone |
+| Docker Desktop is removed after validation | Future local reproduction needs the runtime restored | Keep setup fully committed; use only an owner-approved official Docker installation and rerun the same commands |
 | Python 3.14 differs from proposed 3.12 | Package/runtime divergence | Make 3.12 explicit in local setup, Docker, and CI |
-| Dependency installation requires network | Phase 1 cannot start safely | Request one scoped approval after metadata is reviewed |
+| Dependency/image installation requires network | Reproduction cannot start offline | Use the reviewed lock, exact image tag, and scoped network approval |
 | Demo app consumes portfolio effort | Framework work becomes diluted | Enforce one workflow, minimal UI, and no product roadmap |
 | Existing tests lose recognizable history | Reviewers may see a rewrite | Migrate in checkpoints, preserve concepts, and explain replacements in commits/docs |
 | Parallel execution corrupts artifacts/state | Flaky or misleading results | Worker-specific paths, unique IDs, targeted cleanup, bounded workers, serial-first gates |
@@ -549,29 +545,25 @@ project volumes.
 | README drifts from code | Unsupported public claims recur | Treat documented commands and claim classification as final release gates |
 | Repository rename breaks references | Recruiter/user friction | Keep the current name until implementation is complete and approval is explicit |
 
-## Approval questions
+## Approval decisions
 
-Implementation requires explicit answers to these decisions:
+The owner explicitly approved:
 
-1. Approve Option B: selective internal rebuild on
-   `refactor/sdet-framework-modernization`, preserving Git history?
-2. Approve the controlled local order UI + FastAPI REST API + PostgreSQL system under test?
-3. Approve Python 3.12 as the project runtime and a later scoped network/dependency install
-   after version bounds/lock metadata are reviewed?
-4. Approve replacing primary Allure reporting with native Playwright artifacts, HTML, and
-   JUnit reports?
-5. Approve removing Kubernetes, the current Jenkinsfile, decorative ownership/
-   observability modules, unused data/schema/helpers, blanket retries, and third-party
-   SauceDemo/JSONPlaceholder dependencies?
-6. Docker and Docker Compose are not installed locally. Should implementation wait for a
-   locally available Docker environment, or proceed through non-container checkpoints
-   while marking Compose validation blocked?
-7. Approve keeping `sdet-playwright-framework` during modernization and revisiting
-   `sdet-quality-engineering-portfolio` only after the broader scope is demonstrated?
+1. Option B: selective internal rebuild on
+   `refactor/sdet-framework-modernization`, preserving Git history.
+2. The controlled local order UI, FastAPI REST API, and PostgreSQL system under test.
+3. Python 3.12, locked dependency installation, and scoped network access.
+4. Native Playwright artifacts, HTML, and JUnit as the primary reporting path.
+5. Removal of Kubernetes, Jenkins, decorative ownership/observability modules, unused
+   data/schema/helpers, blanket retries, and third-party demo-site dependencies.
+6. Official Docker Desktop installation and local Docker/PostgreSQL/Compose/E2E
+   validation using default internal storage.
+7. Keeping `sdet-playwright-framework` through modernization and deferring any future
+   naming decision.
 
-No repository rename, push, publication, merge, release, pull request, or GitHub settings
-change is included in any approval above. Each would require separate explicit authority;
-the current task expressly forbids them.
+No repository rename, push, publication, merge, release, pull request, hosted workflow,
+or GitHub settings change is included in those approvals. Each requires separate
+explicit authority; the current task forbids them.
 
 ## Phase 0 stop record
 
