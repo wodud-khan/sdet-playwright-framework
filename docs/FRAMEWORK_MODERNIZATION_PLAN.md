@@ -16,7 +16,9 @@ Implementation status:
 - Checkpoint 2: application foundation validated through isolated unit and lightweight
   SQLite checks; PostgreSQL/Compose configuration implemented but runtime validation is
   blocked, so the checkpoint remains incomplete
-- Checkpoints 3–7: pending
+- Checkpoint 3: API, contract, direct PostgreSQL, and integration test layers implemented;
+  collection and isolated framework tests pass, but service execution is blocked
+- Checkpoints 4–7: pending
 - Docker and PostgreSQL runtime validation: blocked because Docker is not installed
 
 Observed evidence for the partial candidate:
@@ -25,7 +27,7 @@ Observed evidence for the partial candidate:
 - a fresh repository-local environment installed successfully with
   `uv sync --extra dev --locked --python 3.12`
 - 49 installed packages passed `uv pip check`
-- six unit tests collected and passed
+- 23 tests collect after Checkpoint 3; 16 isolated unit cases pass
 - Ruff lint and formatting checks passed
 - Mypy passed for the current source and readiness script
 - a local SQLite-backed health/create/read/delete flow returned expected HTTP statuses
