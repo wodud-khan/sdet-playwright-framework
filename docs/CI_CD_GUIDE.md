@@ -104,19 +104,31 @@ readiness, and safe shutdown passed. The workflow-equivalent test intent passed 
 - 3 smoke cases passed across Chromium, Firefox, and WebKit
 - the failure-evidence bundle and exact-ID cleanup were demonstrated
 
-## Current validation boundary
+## Hosted validation evidence
 
-The local results prove the committed Dockerfile, Compose stack, PostgreSQL-backed test
-behavior, and command design on the observed Mac runtime. The workflow file has not been
-pushed or executed, so local results do not prove GitHub-hosted runner behavior,
-action execution, caches, artifact upload, or workflow conclusion.
+The workflow passed in both integration stages:
 
-Therefore:
+- Pull-request run
+  [`30236883963`](https://github.com/wodud-khan/sdet-playwright-framework/actions/runs/30236883963)
+  validated `bab0f08a59c6423e08c80fa38635cf217d93d6c4`.
+- Post-merge `main` run
+  [`30237237422`](https://github.com/wodud-khan/sdet-playwright-framework/actions/runs/30237237422)
+  validated merge commit `0a2fbf927893ccacb56365214e8e5371c0434e39`.
 
-- do not claim a passing GitHub Actions pipeline
-- do not present local Docker success as a hosted workflow result
-- record the first hosted run ID, result, and retained artifacts in
-  `FINAL_VALIDATION_REPORT.md` before making a CI-success claim
+In both runs, `static-and-unit` and `postgres-and-browser` passed. Each run uploaded
+`unit-reports` and `service-browser-evidence`. The hosted results confirmed:
+
+- 28-test collection, Ruff, formatting, Mypy, and 18 unit tests
+- 7 serial service tests and the same 7 cases with two workers
+- 3 Chromium UI/E2E tests
+- 3 smoke cases across Chromium, Firefox, and WebKit, with 31 cases deselected
+- Compose build, health, readiness, diagnostic capture, artifact upload, and shutdown
+
+These results demonstrate the committed quality-validation workflow on GitHub-hosted
+Ubuntu runners. They do not demonstrate deployment, release automation, package
+publication, production operations, or infrastructure ownership. Local Docker evidence
+and hosted workflow evidence remain distinct and are both recorded in
+`FINAL_VALIDATION_REPORT.md`.
 
 ## Failure triage
 

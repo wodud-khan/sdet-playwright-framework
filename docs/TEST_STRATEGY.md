@@ -16,13 +16,13 @@ The framework targets a small set of risks that can be demonstrated deeply:
 
 | Layer | Intent | Runtime | Current evidence |
 |---|---|---|---|
-| Unit | Settings, schemas, data, cleanup, diagnostics, SQLite repository logic | Python only | 18 passing |
-| API | Exact REST status and body behavior | App + PostgreSQL | Implemented; blocked |
-| Contract | JSON Schema for create/read order responses | App + PostgreSQL | Implemented; blocked |
-| Database | Independent row verification by exact ID | App + PostgreSQL | Implemented; blocked |
-| Integration | API create/delete reflected in PostgreSQL | App + PostgreSQL | Implemented; blocked |
-| UI | Focused form controls and client validation | App; fallback allowed explicitly | Chromium fallback passing |
-| E2E | UI create, API read, DB verify, exact cleanup | App + PostgreSQL + Chromium | Implemented; blocked |
+| Unit | Settings, schemas, data, cleanup, diagnostics, SQLite repository logic | Python only | 18 passed locally and hosted |
+| API | Exact REST status and body behavior | App + PostgreSQL | 4 passed |
+| Contract | JSON Schema for create/read order responses | App + PostgreSQL | 1 passed |
+| Database | Independent row verification by exact ID | App + PostgreSQL | 1 passed |
+| Integration | API create/delete reflected in PostgreSQL | App + PostgreSQL | 1 passed |
+| UI | Focused form controls and client validation | App + PostgreSQL + Chromium | 2 passed |
+| E2E | UI create, API read, DB verify, exact cleanup | App + PostgreSQL + Chromium | 1 passed |
 
 SQLite results never substitute for PostgreSQL evidence.
 
@@ -95,18 +95,19 @@ metadata without request/response bodies or sensitive headers.
   --junitxml=artifacts/browser-junit.xml
 ```
 
-An intentional closed-port drill demonstrated that JSON browser events, a screenshot,
-trace, and video are retained on failure. Compose/app/PostgreSQL log capture is configured
-in CI but has not yet run.
+A controlled PostgreSQL-backed failure drill demonstrated JSON browser events,
+screenshot, trace, video, HTML/JUnit reports, and application/database/Compose logs.
+The retained bundle passed a privacy scan. Both hosted runs captured Compose diagnostics,
+stopped services, and uploaded the expected report artifacts.
 
-## Exit criteria
+## Validated evidence
 
-The modernization cannot be classified as complete until:
+The required quality evidence is demonstrated:
 
-- Docker Compose starts the app and PostgreSQL as healthy
-- every service and browser layer passes independently
-- the complete E2E case proves its cleanup
-- the PostgreSQL-backed suite passes with two workers
-- three-browser smoke passes against the primary stack
-- the GitHub-hosted workflow passes and retains its artifacts
-- the final report is updated with exact runtime evidence
+- Docker Compose started the app and PostgreSQL as healthy locally and on hosted runners.
+- Every service and browser layer passed independently.
+- The complete E2E case proved exact-ID cleanup and PostgreSQL absence.
+- Seven PostgreSQL-backed service cases passed with two workers.
+- Three-browser smoke passed against the primary stack.
+- Pull-request and post-merge `main` workflows passed and retained both artifact sets.
+- The final report records exact local and hosted runtime evidence.

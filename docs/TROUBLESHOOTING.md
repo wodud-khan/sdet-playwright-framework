@@ -11,8 +11,8 @@ docker version
 docker compose version
 ```
 
-The supported branch for this modernization is
-`refactor/sdet-framework-modernization`, and the supported project Python line is 3.12.
+Use `main` as the integrated technical baseline. The supported project Python line is
+3.12.
 
 ## Virtual-environment launchers reference an old repository path
 
@@ -182,16 +182,17 @@ Reports are generated only when their options are present:
   --junitxml=artifacts/unit-junit.xml
 ```
 
-`artifacts/` is ignored by design. The workflow is configured to upload evidence under
-`if: always()`, but that behavior becomes evidence only after a hosted run.
+`artifacts/` is ignored by design. The workflow uploads `unit-reports` and
+`service-browser-evidence` under `if: always()`; that behavior passed in both the
+pull-request and post-merge `main` runs.
 
 ## Evidence contains a personal path or sensitive field
 
 Inspect ordinary files and compressed trace contents before sharing:
 
 ```bash
-rg -a -n '/Users/|authorization|set-cookie|cookie:' artifacts
-unzip -p path/to/trace.zip | rg -a -n '/Users/|authorization|set-cookie|cookie:'
+rg -a -n 'authorization|set-cookie|cookie:' artifacts
+unzip -p path/to/trace.zip | rg -a -n 'authorization|set-cookie|cookie:'
 ```
 
 Do not publish an unsafe bundle. Regenerate or sanitize only the offending metadata,
