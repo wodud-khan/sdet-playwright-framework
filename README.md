@@ -3,7 +3,7 @@
 A focused quality-engineering portfolio built around a deliberately small order
 application. The repository demonstrates test architecture and engineering decisions
 across Python, Pytest, Playwright, REST, JSON Schema, PostgreSQL, diagnostics, reporting,
-Docker Compose, and GitHub Actions configuration.
+Docker Compose, and GitHub Actions validation.
 
 The primary local stack is demonstrated end to end: Docker Compose builds and starts the
 FastAPI application and PostgreSQL 17, all service and browser layers pass, bounded
@@ -21,7 +21,7 @@ and exact-ID cleanup works even after an intentional assertion failure.
 - Failure-only browser/API evidence plus HTML, JUnit, trace, screenshot, video, and logs
 - Locked Python 3.12 dependencies through uv
 - A non-root application image and health-checked Docker Compose stack
-- A least-privilege, SHA-pinned GitHub Actions workflow ready for hosted validation
+- A least-privilege, SHA-pinned GitHub Actions workflow demonstrated on PR and `main`
 
 ## Demonstrated evidence
 
@@ -41,10 +41,16 @@ and exact-ID cleanup works even after an intentional assertion failure.
 | PostgreSQL-backed Chromium/Firefox/WebKit smoke | 3 passed |
 | Docker no-cache build and Compose health lifecycle | Passed |
 | Intentional-failure cleanup and diagnostic evidence drills | Passed |
-| Hosted GitHub Actions execution | Not executed |
+| Pull-request GitHub Actions run | Both jobs passed |
+| Post-merge `main` GitHub Actions run | Both jobs passed |
 
-See [FINAL_VALIDATION_REPORT.md](docs/FINAL_VALIDATION_REPORT.md) for exact commands,
-runtime versions, evidence boundaries, and remaining limitations.
+Hosted validation passed in pull-request run
+[`30236883963`](https://github.com/wodud-khan/sdet-playwright-framework/actions/runs/30236883963)
+and post-merge `main` run
+[`30237237422`](https://github.com/wodud-khan/sdet-playwright-framework/actions/runs/30237237422).
+Both runs uploaded `unit-reports` and `service-browser-evidence`. See
+[FINAL_VALIDATION_REPORT.md](docs/FINAL_VALIDATION_REPORT.md) for exact commands,
+runtime evidence, privacy boundaries, and remaining limitations.
 
 ## Prerequisites
 
@@ -198,21 +204,19 @@ do not call public websites or require external accounts.
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Design decisions](docs/DESIGN_DECISIONS.md)
 - [Test strategy](docs/TEST_STRATEGY.md)
 - [CI/CD guide](docs/CI_CD_GUIDE.md)
 - [Flaky-test policy](docs/FLAKY_TEST_POLICY.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [AI-assisted engineering](docs/AI_ASSISTED_ENGINEERING.md)
 - [Final validation report](docs/FINAL_VALIDATION_REPORT.md)
-- [Interview walkthrough](docs/INTERVIEW_WALKTHROUGH.md)
-- [Résumé and LinkedIn claims](docs/RESUME_AND_LINKEDIN_CLAIMS.md)
 
 ## Limitations
 
-- The GitHub Actions workflow has not been pushed or executed; local success is not a
-  hosted-CI result.
 - Positive order schema coverage is present; a dedicated error-response schema is not.
 - The demo app initializes its small schema directly; migration tooling is outside scope.
 - Authentication, cloud deployment, performance, security, accessibility, and visual
   regression programs are intentionally outside scope.
+- GitHub Actions validates quality on an Ubuntu runner; it does not deploy or operate the
+  application.
 - This is a portfolio system, not a production application or enterprise framework.

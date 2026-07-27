@@ -7,8 +7,8 @@ The demo application provides owned UI, API, and persistence boundaries so the t
 not depend on third-party websites. It is intentionally not a production product.
 
 PostgreSQL is the primary database for service, integration, Docker, CI, and E2E
-execution. SQLite has one narrow role: fast isolated checks and an explicitly enabled UI
-fallback when PostgreSQL is unavailable.
+execution. SQLite has one narrow role: isolated checks and an explicitly enabled
+lightweight UI-development path. It never substitutes for primary-stack validation.
 
 ## Runtime flow
 
@@ -60,7 +60,7 @@ case connects all three observations and then deletes only the order it owns.
 
 The Compose project defines:
 
-- `database`: PostgreSQL 17.5 with a health check and named volume
+- `database`: PostgreSQL 17.10 Bookworm with a health check and named volume
 - `app`: a non-root Python 3.12 image that waits for database health and exposes its own
   health check
 
@@ -77,7 +77,9 @@ The expected order is:
 5. Capture reports and Compose logs.
 6. Stop the stack without deleting the database volume.
 
-Docker execution has not yet been demonstrated locally.
+This lifecycle passed in the local no-cache Docker validation and in both the
+pull-request and post-merge `main` GitHub Actions runs. Hosted jobs also captured
+Compose diagnostics, stopped the stack, and uploaded the expected evidence.
 
 ## Data isolation and cleanup
 
@@ -99,10 +101,12 @@ Runtime values come from:
 - `ARTIFACTS_DIR`
 - `TEST_RUN_ID`
 
-`.env.example` contains safe local demonstration values. `.env`, `*.local.md`, generated
-reports, virtual environments, and browser artifacts are ignored. The Docker build
-context independently excludes local-only Markdown files, Git metadata, tests, reports,
-and editor state.
+`.env.example` contains safe local demonstration values. Local environment variants,
+private-note patterns, generated reports, virtual environments, caches, logs, browser
+artifacts, and local database files are ignored. An explicit exception keeps
+`.env.example` trackable. The Docker build context mirrors those safeguards and also
+excludes Git metadata, tests, technical documentation, reports, and editor or operating
+system state that the application image does not require.
 
 ## Deliberate exclusions
 

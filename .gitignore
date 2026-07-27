@@ -1,8 +1,14 @@
 # Virtual environments
 .venv*/
 venv/
+
+# Local configuration and private notes
 .env
-*.local.md
+.env.*
+!.env.example
+PRIVATE_*
+*.local.*
+private/
 
 # Python cache
 __pycache__/
@@ -18,6 +24,10 @@ allure-results/
 allure-report/
 playwright-report/
 test-results/
+*.log
+*.sqlite
+*.sqlite3
+*.db
 
 # IDEs
 .vscode/

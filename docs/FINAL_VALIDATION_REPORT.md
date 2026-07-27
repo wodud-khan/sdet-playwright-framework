@@ -1,6 +1,6 @@
 # Final Validation Report
 
-Report date: 2026-07-26
+Report date: 2026-07-27
 
 ## Executive summary
 
@@ -9,11 +9,10 @@ quality-engineering portfolio while preserving Git history and repository identi
 baseline's third-party tests, decorative Jenkins/Kubernetes/Allure paths, blanket
 retries, and unsupported claims were removed or replaced.
 
-The primary local runtime is now demonstrated. An official Apple Silicon Docker Desktop
-installation built the non-root application image without cache, pulled PostgreSQL
-17.10 Bookworm for ARM64, started both services to healthy state, and supported every
-unit, API, contract, direct-database, integration, Chromium UI, full E2E, bounded
-parallel, and three-browser smoke command required by the validation plan.
+The primary local runtime is demonstrated. The non-root application image built without
+cache, the official PostgreSQL 17.10 Bookworm image started healthy, and every unit,
+API, contract, direct-database, integration, Chromium UI, full E2E, bounded-parallel,
+and three-browser smoke command passed against the controlled stack.
 
 Exact-ID cleanup was proven after a deliberate intermediate assertion failure. A
 separate PostgreSQL-backed Chromium failure drill produced the complete diagnostic
@@ -21,43 +20,42 @@ bundle and was privacy-audited. Both temporary failing tests were removed, the c
 E2E passed again, the orders table contained zero rows, the containers were stopped, and
 the named PostgreSQL volume was retained.
 
-The only major execution boundary left is hosted GitHub Actions. The workflow is
-committed and locally aligned, but it has not been pushed or run; this report does not
-claim hosted CI success.
+GitHub Actions then passed twice: once for pull request #1 and once for the merge commit
+on `main`. Both hosted runs completed static/unit and PostgreSQL/browser jobs, uploaded
+the expected artifacts, stopped their Compose stacks, and produced no failure, error,
+or warning annotations.
 
-## Safety and scope record
+## Reproducibility and privacy scope
 
-- Workspace: local `sdet-playwright-framework` repository
-- Branch: `refactor/sdet-framework-modernization`
-- Baseline tag and original candidate HEAD: `sdet-portfolio-baseline-v1` / `24cb706`
-- Retained safety stash:
-  `SDET framework modernization candidate before PostgreSQL reconciliation`
-- Publication: no push, merge, pull request, release, repository rename, or settings
-  change
-- Docker scope: official Docker Desktop only; no alternate runtime, account, sign-in,
-  subscription, cloud service, storage relocation, internal-settings edit, or symlink
-- Privacy: local `*.local.md` files remained ignored and excluded from Git, Docker
-  context, retained reports, and public documentation
+- Git history and repository identity were preserved.
+- Locked Python dependencies, Dockerfile, Compose configuration, and the official
+  PostgreSQL image define the reproducible runtime.
+- Local configuration, private-note patterns, reports, logs, browser evidence, caches,
+  virtual environments, and local databases are excluded by Git and Docker-context
+  safeguards.
+- Local failure evidence and both hosted artifact sets were scanned for credentials,
+  private request data, personal paths, and local-only material.
+- Kubernetes, Jenkins, Allure, public demo sites, blanket retries, deployment, and
+  production-operations claims remain outside the focused scope.
 
 ## Validation environment
 
 | Item | Observed value |
 |---|---|
-| Host | macOS 15.7.4, Apple Silicon ARM64 |
 | uv | 0.11.8 |
 | Project Python | 3.12.11 |
 | Locked development packages | 49 installed; lock check passed |
 | Playwright | 1.61.0 with Chromium, Firefox, and WebKit |
-| Docker Desktop | 4.83.0, build 234302 |
-| Docker Engine | 29.6.2, Linux ARM64 |
-| Docker Compose | 5.3.1 |
+| Local container architecture | Linux ARM64 |
+| Hosted runner | GitHub-hosted Ubuntu |
 | PostgreSQL image | `postgres:17.10-bookworm` |
 | PostgreSQL server | 17.10, Debian `17.10-1.pgdg12+1` |
 | PostgreSQL image digest | `sha256:4f736ae292687621d4dbe0d499ffd024a36bd2ee7d8ca6f2ccd4c800f047b394` |
-| Application image | Linux ARM64, configured user `portfolio` |
+| Application image | Non-root user `portfolio` |
 
-`docker version`, `docker compose version`, `docker info`, and
-`docker run --rm hello-world` all passed. The `hello-world` pull selected ARM64.
+Local Docker engine, Compose, information, and `hello-world` checks passed before stack
+validation. The hosted workflow independently exercised the committed Linux build and
+Compose lifecycle on GitHub runners.
 
 ## Build and Compose results
 
@@ -125,6 +123,41 @@ No primary command used `--allow-sqlite-ui-fallback`.
 | Two-worker Chromium UI | `pytest tests/ui -n 2 --browser chromium -q` | 2 passed |
 | Three-browser smoke | Chromium, Firefox, WebKit | 3 passed, 31 deselected |
 | Post-drill E2E restoration | committed Chromium E2E | 1 passed |
+
+## Hosted GitHub Actions evidence
+
+Pull-request validation:
+
+- Run: [`30236883963`](https://github.com/wodud-khan/sdet-playwright-framework/actions/runs/30236883963)
+- Validated commit: `bab0f08a59c6423e08c80fa38635cf217d93d6c4`
+- `static-and-unit`: passed
+- `postgres-and-browser`: passed
+- Artifacts: `unit-reports`, `service-browser-evidence`
+
+Post-merge `main` validation:
+
+- Run: [`30237237422`](https://github.com/wodud-khan/sdet-playwright-framework/actions/runs/30237237422)
+- Merge commit: `0a2fbf927893ccacb56365214e8e5371c0434e39`
+- `static-and-unit`: passed
+- `postgres-and-browser`: passed
+- Artifacts: `unit-reports`, `service-browser-evidence`
+
+The `main` run reproduced the expected summaries:
+
+- 28 tests collected
+- Ruff lint and formatting passed; Mypy found no issues in 18 source files
+- 18 unit tests passed
+- 7 serial service tests passed
+- 7 service tests passed with two workers
+- 3 Chromium UI/E2E tests passed
+- 3 Chromium/Firefox/WebKit smoke cases passed, with 31 deselected
+- Compose build, health, readiness, diagnostics, artifact upload, and shutdown passed
+
+Neither run produced a failure, error, or warning annotation. The downloaded artifact
+sets contained only the expected HTML/JUnit reports and Compose state/log files. A
+content scan found no credentials, personal paths or identities, private local material,
+authorization/cookie/session data, environment secrets, or request-body literals. The
+temporary audit copies were deleted; hosted artifacts were retained.
 
 ## Data isolation and cleanup proof
 
@@ -203,50 +236,35 @@ metadata strings were replaced with `<repository>`, the archive was rebuilt, and
 | Three-browser smoke | Implemented and demonstrated | Chromium, Firefox, WebKit passed on primary stack |
 | Failure evidence and reports | Implemented and demonstrated | Complete privacy-audited bundle retained locally |
 | Compose stack and non-root app image | Implemented and demonstrated | No-cache build and healthy lifecycle passed |
-| GitHub Actions quality pipeline | Implemented; hosted run not executed | Exact workflow pins reviewed; no hosted run |
+| GitHub Actions quality pipeline | Implemented and demonstrated | PR and post-merge `main` runs passed with artifacts |
 | Kubernetes/Jenkins/Allure primary paths | Removed | Outside focused portfolio scope |
 
-## CI validation boundary
+## CI evidence boundary
 
 The workflow uses read-only permissions, non-persisted checkout credentials, bounded
-timeouts, concurrency cancellation, exact action SHAs, the same locked dependencies, and
-the same Compose/test commands demonstrated locally.
+timeouts, concurrency cancellation, exact action SHAs, locked dependencies, and the
+same Compose/test commands demonstrated locally. The two successful hosted runs prove
+quality-gate execution, runner setup, container lifecycle, test behavior, and artifact
+upload for the validated commits.
 
-Local Docker success proves the committed build and service lifecycle on this Mac. It
-does not prove GitHub-hosted runner behavior, action execution, caching, or artifact
-upload. Do not claim a passing GitHub Actions pipeline until an authorized hosted run
-passes and its run ID and artifacts are recorded here.
+The workflow does not deploy an application, publish a package, create a release, or
+operate production infrastructure. A passing quality workflow is not evidence of those
+capabilities.
 
 ## Known limitations
 
-- No GitHub-hosted workflow result or uploaded CI artifact
 - Positive order schema coverage only; a dedicated error-response schema is deferred
 - App startup initializes the small schema directly; migration tooling is outside scope
 - No authentication, cloud, performance, security, accessibility, or visual-regression
   program
-- Docker validation was performed on Apple Silicon; the official PostgreSQL tag is
-  multi-architecture, but this run does not independently test an AMD64 host
+- Hosted CI performs quality validation only; deployment and production operations are
+  outside scope
+- Local container validation exercised ARM64 and hosted validation exercised the GitHub
+  Ubuntu environment; no broader platform matrix is claimed
 
-## Meaningful local commit history
+## Validation checklist
 
-The modernization uses coherent Conventional Commits:
-
-1. `docs: record repository audit and modernization strategy`
-2. `refactor: remove unsupported legacy framework components`
-3. `chore: establish reproducible Python project configuration`
-4. `feat: add controlled order application foundation`
-5. `chore: define PostgreSQL Compose configuration`
-6. `test: add PostgreSQL service-layer coverage`
-7. `test: add Playwright UI workflow and failure diagnostics`
-8. `ci: add reproducible GitHub Actions quality pipeline`
-9. `docs: document architecture execution and portfolio evidence`
-10. `chore: update container and workflow validation dependencies`
-
-No commit was pushed.
-
-## Final pre-push checklist
-
-- [x] Official Docker Desktop installation and runtime checks passed.
+- [x] Local container runtime checks passed.
 - [x] Compose config, no-cache build, startup, health, logs, and shutdown passed.
 - [x] API, contract, database, integration, UI, and E2E suites passed independently.
 - [x] Full UI-to-API-to-PostgreSQL cleanup was proven.
@@ -255,14 +273,15 @@ No commit was pushed.
 - [x] Three-browser smoke passed against the PostgreSQL stack.
 - [x] Failure reports and logs were privacy-audited.
 - [x] Local-only files remain ignored and absent from Git and Docker context.
-- [x] The safety stash remains available.
-- [ ] GitHub Actions was authorized to run, passed, and retained expected artifacts.
-- [ ] Push or pull-request authority was granted.
+- [x] Pull-request and post-merge `main` GitHub Actions jobs passed.
+- [x] Both hosted runs retained `unit-reports` and `service-browser-evidence`.
+- [x] Hosted artifacts and current public files passed privacy review.
 
 ## Completion decision
 
-Status: **local Docker/PostgreSQL modernization validation complete**.
+Status: **local and hosted quality validation demonstrated**.
 
-The repository is ready for an authorized push to validate the hosted GitHub Actions
-workflow. This work stops before push, pull request, hosted execution, merge, release,
-publication, repository settings changes, or safety-stash deletion.
+The demonstrated evidence covers the controlled application, PostgreSQL integration,
+layered test architecture, exact cleanup, bounded parallelism, three-browser smoke,
+failure diagnostics, Compose lifecycle, and GitHub-hosted quality workflow. It does not
+claim production readiness, deployment, enterprise scale, or zero flakiness.
