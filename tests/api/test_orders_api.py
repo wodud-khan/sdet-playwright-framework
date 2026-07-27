@@ -10,8 +10,8 @@ from test_framework.order_manager import OrderManager
 
 
 @pytest.mark.api
-def test_create_and_read_order(create_order: OrderManager, api_client: ApiClient) -> None:
-    created = create_order.create()
+def test_create_and_read_order(order_manager: OrderManager, api_client: ApiClient) -> None:
+    created = order_manager.create()
 
     assert created.response_body["customer_name"] == created.payload.customer_name
     assert created.response_body["item_name"] == created.payload.item_name

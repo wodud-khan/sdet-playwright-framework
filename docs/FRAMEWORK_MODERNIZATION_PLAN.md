@@ -18,7 +18,12 @@ Implementation status:
   blocked, so the checkpoint remains incomplete
 - Checkpoint 3: API, contract, direct PostgreSQL, and integration test layers implemented;
   collection and isolated framework tests pass, but service execution is blocked
-- Checkpoints 4–7: pending
+- Checkpoint 4: focused Playwright UI and the PostgreSQL E2E workflow implemented; focused
+  UI passes only against the explicit SQLite fallback, while E2E execution is blocked
+- Checkpoint 5: diagnostics, HTML/JUnit reporting, bounded unit/UI parallelism, and a
+  three-browser smoke check validated against isolated/fallback paths; PostgreSQL-backed
+  browser evidence remains blocked
+- Checkpoints 6–7: pending
 - Docker and PostgreSQL runtime validation: blocked because Docker is not installed
 
 Observed evidence for the partial candidate:
@@ -27,7 +32,12 @@ Observed evidence for the partial candidate:
 - a fresh repository-local environment installed successfully with
   `uv sync --extra dev --locked --python 3.12`
 - 49 installed packages passed `uv pip check`
-- 23 tests collect after Checkpoint 3; 16 isolated unit cases pass
+- 28 tests collect after Checkpoint 5; 18 isolated unit cases pass
+- focused fallback UI: two Chromium cases pass, including a two-worker bounded run
+- fallback browser smoke: one case passes on Chromium, Firefox, and WebKit
+- an intentional closed-port failure retained structured browser JSON, screenshot, trace,
+  and video evidence
+- self-contained HTML and JUnit unit reports were generated successfully
 - Ruff lint and formatting checks passed
 - Mypy passed for the current source and readiness script
 - a local SQLite-backed health/create/read/delete flow returned expected HTTP statuses

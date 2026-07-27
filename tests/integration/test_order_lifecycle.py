@@ -11,11 +11,11 @@ from test_framework.order_manager import OrderManager
 
 @pytest.mark.integration
 def test_api_create_and_delete_are_reflected_in_postgresql(
-    create_order: OrderManager,
+    order_manager: OrderManager,
     api_client: ApiClient,
     postgres_client: PostgresOrderClient,
 ) -> None:
-    created = create_order.create()
+    created = order_manager.create()
 
     assert postgres_client.order_exists(created.id)
 
@@ -23,4 +23,4 @@ def test_api_create_and_delete_are_reflected_in_postgresql(
 
     assert delete_response.status_code == 204
     assert not postgres_client.order_exists(created.id)
-    create_order.mark_cleaned(created.id)
+    order_manager.mark_cleaned(created.id)

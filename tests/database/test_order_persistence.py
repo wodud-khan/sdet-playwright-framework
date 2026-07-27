@@ -10,10 +10,10 @@ from test_framework.order_manager import OrderManager
 
 @pytest.mark.database
 def test_created_order_is_persisted_with_exact_values(
-    create_order: OrderManager,
+    order_manager: OrderManager,
     postgres_client: PostgresOrderClient,
 ) -> None:
-    created = create_order.create()
+    created = order_manager.create()
 
     row = postgres_client.fetch_order(created.id)
 

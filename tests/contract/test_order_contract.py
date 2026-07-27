@@ -16,10 +16,10 @@ ORDER_SCHEMA = json.loads(Path("contracts/order.schema.json").read_text(encoding
 
 @pytest.mark.contract
 def test_create_and_read_responses_match_order_contract(
-    create_order: OrderManager,
+    order_manager: OrderManager,
     api_client: ApiClient,
 ) -> None:
-    created = create_order.create()
+    created = order_manager.create()
     validate_contract(created.response_body, ORDER_SCHEMA)
 
     read_response = api_client.get(f"/orders/{created.id}")

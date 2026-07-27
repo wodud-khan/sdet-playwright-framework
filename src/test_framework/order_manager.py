@@ -45,6 +45,10 @@ class OrderManager:
         """Release an order after a test explicitly proves its deletion."""
         self._owned_order_ids.remove(order_id)
 
+    def register_owned(self, order_id: str) -> None:
+        """Register state created outside the API helper, such as through the UI."""
+        self._owned_order_ids.append(order_id)
+
     def cleanup(self) -> None:
         """Delete every remaining owned order and prove API absence."""
         for order_id in reversed(self._owned_order_ids):
