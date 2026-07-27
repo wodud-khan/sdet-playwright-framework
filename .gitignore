@@ -1,12 +1,15 @@
 # Virtual environments
+.venv*/
 venv/
 .env
+*.local.md
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.egg-info/
 
 # Test artifacts
 artifacts/
@@ -14,6 +17,7 @@ logs/
 allure-results/
 allure-report/
 playwright-report/
+test-results/
 
 # IDEs
 .vscode/
@@ -24,10 +28,14 @@ playwright-report/
 
 # Coverage
 .coverage
+.coverage.*
 htmlcov/
+coverage.xml
 
 # Pytest
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Node
 node_modules/

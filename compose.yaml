@@ -1,0 +1,46 @@
+name: sdet-playwright-framework
+
+services:
+  database:
+    image: postgres:17.10-bookworm
+    environment:
+      POSTGRES_DB: portfolio
+      POSTGRES_USER: portfolio
+      POSTGRES_PASSWORD: local-demo-password
+      POSTGRES_INITDB_ARGS: --data-checksums
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portfolio -d portfolio"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - portfolio_database:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  app:
+    build:
+      context: .
+      target: app
+    environment:
+      DATABASE_URL: postgresql://portfolio:local-demo-password@database:5432/portfolio
+    depends_on:
+      database:
+        condition: service_healthy
+    init: true
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          from urllib.request import urlopen;
+          urlopen('http://127.0.0.1:8000/health', timeout=2)
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  portfolio_database:

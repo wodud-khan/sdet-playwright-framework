@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portfolio.invalid/contracts/order.schema.json",
+  "title": "Order response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "customer_name",
+    "item_name",
+    "quantity",
+    "unit_price_cents",
+    "status",
+    "total_cents",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "customer_name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 80
+    },
+    "item_name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 80
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "unit_price_cents": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "status": {
+      "const": "created"
+    },
+    "total_cents": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
