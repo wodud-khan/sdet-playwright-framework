@@ -2,9 +2,16 @@
 
 ## Workflow scope
 
-`.github/workflows/quality.yml` defines validation, not deployment. It triggers on pushes,
-pull requests, and manual dispatch. It does not publish packages, deploy infrastructure,
-create releases, modify repository settings, or write back to the repository.
+`.github/workflows/quality.yml` defines validation, not deployment. It triggers
+automatically for pushes to `main`, for pull requests, and through manual dispatch. It
+does not publish packages, deploy infrastructure, create releases, modify repository
+settings, or write back to the repository.
+
+Restricting push execution to `main` avoids duplicate push and pull-request runs on
+feature branches. Pull requests provide feature-branch validation, the `main` push
+validates the integrated result, and manual dispatch preserves an explicit path for
+branch validation when required. This is the intended long-term trigger strategy rather
+than a temporary modernization exception.
 
 The workflow has read-only repository permissions, disables persisted checkout
 credentials, cancels superseded runs for the same ref, and applies explicit job timeouts.
@@ -44,16 +51,30 @@ Artifacts are retained for 14 days. Hidden files are not included.
 
 ## Action pins
 
-At the time the workflow was authored:
+The pins were reviewed against the official action repositories on 2026-07-26:
 
 | Action | Pin |
 |---|---|
-| `actions/checkout` v7.0.0 | `9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0` |
+| `actions/checkout` v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` |
 | `astral-sh/setup-uv` v8.1.0 | `08807647e7069bb48b6ef5acd8ec9567f424441b` |
 | `actions/cache` v6.1.0 | `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` |
 | `actions/upload-artifact` v7.0.1 | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` |
 
-Pins should be reviewed periodically through official release and security notices.
+`actions/checkout` moved from v7.0.0 to the compatible v7.0.1 patch release because
+v7.0.1 supersedes the existing release and its exact commit was verified in the official
+repository. The setup-uv, cache, and upload-artifact pins remain unchanged: their exact
+commits are official and compatible with this workflow, and no requirement justifies
+additional dependency churn. Pins should continue to be reviewed through official
+release and security notices.
+
+## Container runtime selection
+
+The controlled database uses `postgres:17.10-bookworm`. PostgreSQL 17.10 is the current
+supported patch release in the approved PostgreSQL 17 major line. The versioned Debian
+Bookworm tag is published by the Docker Official Image for both AMD64 and ARM64, including
+Apple Silicon hosts through Docker Desktop's Linux ARM64 runtime. The configuration does
+not use `latest`, an unversioned tag, a beta release, or a different PostgreSQL major
+version.
 
 ## Local parity
 

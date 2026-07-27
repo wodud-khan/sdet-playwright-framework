@@ -2,7 +2,7 @@ name: sdet-playwright-framework
 
 services:
   database:
-    image: postgres:17.5-alpine
+    image: postgres:17.10-bookworm
     environment:
       POSTGRES_DB: portfolio
       POSTGRES_USER: portfolio
