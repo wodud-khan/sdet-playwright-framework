@@ -1,222 +1,68 @@
 # SDET Playwright Framework
 
-A focused quality-engineering portfolio built around a deliberately small order
-application. The repository demonstrates test architecture and engineering decisions
-across Python, Pytest, Playwright, REST, JSON Schema, PostgreSQL, diagnostics, reporting,
-Docker Compose, and GitHub Actions validation.
+This repository tests a small order form and REST API backed by PostgreSQL. The application is controlled by the project so browser, API, JSON contract, and database checks can observe the same order. Python 3.12, pytest, synchronous Playwright with pytest-playwright fixtures, Requests, uv, Ruff, and Mypy form the test toolchain.
 
-The primary local stack is demonstrated end to end: Docker Compose builds and starts the
-FastAPI application and PostgreSQL 17, all service and browser layers pass, bounded
-parallel runs do not collide, all three supported browser engines pass smoke coverage,
-and exact-ID cleanup works even after an intentional assertion failure.
+## Why these test layers
 
-## What the project contains
+- Unit tests cover input rules, the SQLite repository path, cleanup, and diagnostics without a service.
+- API tests check exact REST statuses and bodies. Contract tests validate response JSON against `contracts/order.schema.json`, independently of Pydantic models.
+- Database tests query PostgreSQL directly; integration tests compare API and persisted state.
+- Focused UI tests check browser controls and feedback. Chromium E2E tests follow UI creation through API and PostgreSQL, then delete the exact owned order. A page smoke test runs on Chromium, Firefox, and WebKit; it is not full E2E coverage on three engines.
 
-- A minimal FastAPI order UI and REST API under `src/demo_app`
-- PostgreSQL as the primary integration and end-to-end persistence runtime
-- Typed API and direct PostgreSQL clients
-- Run- and worker-aware test data with exact-record cleanup
-- Separate unit, API, contract, database, integration, UI, and E2E suites
-- Official pytest-playwright browser fixtures, semantic locators, and web-first assertions
-- Failure-only browser/API evidence plus HTML, JUnit, trace, screenshot, video, and logs
-- Locked Python 3.12 dependencies through uv
-- A non-root application image and health-checked Docker Compose stack
-- A least-privilege, SHA-pinned GitHub Actions workflow demonstrated on PR and `main`
+Each registered ID belongs to one test. Teardown attempts cleanup for every owned ID and verifies absence. A 404 during cleanup is acceptable only after an exact-ID read confirms absence. Product tests still require 204 for DELETE and 404 for missing records. The UI fixes unit price at 2499 cents; tests supply independent expected totals for different quantities.
 
-## Demonstrated evidence
+## Prerequisites and setup
 
-| Capability | Result |
-|---|---|
-| Locked Python 3.12 installation and 28-test collection | Passed |
-| Ruff lint/format and strict Mypy | Passed |
-| Unit | 18 passed |
-| API | 4 passed |
-| JSON contract | 1 passed |
-| Direct PostgreSQL | 1 passed |
-| API-to-PostgreSQL integration | 1 passed |
-| Focused Chromium UI | 2 passed |
-| Chromium UI-to-API-to-PostgreSQL E2E | 1 passed |
-| Two-worker service layer | 7 passed |
-| Two-worker Chromium UI | 2 passed |
-| PostgreSQL-backed Chromium/Firefox/WebKit smoke | 3 passed |
-| Docker no-cache build and Compose health lifecycle | Passed |
-| Intentional-failure cleanup and diagnostic evidence drills | Passed |
-| Pull-request GitHub Actions run | Both jobs passed |
-| Post-merge `main` GitHub Actions run | Both jobs passed |
-
-Hosted validation passed in pull-request run
-[`30236883963`](https://github.com/wodud-khan/sdet-playwright-framework/actions/runs/30236883963)
-and post-merge `main` run
-[`30237237422`](https://github.com/wodud-khan/sdet-playwright-framework/actions/runs/30237237422).
-Both runs uploaded `unit-reports` and `service-browser-evidence`. See
-[FINAL_VALIDATION_REPORT.md](docs/FINAL_VALIDATION_REPORT.md) for exact commands,
-runtime evidence, privacy boundaries, and remaining limitations.
-
-## Prerequisites
-
-- macOS or Linux
-- [uv](https://docs.astral.sh/uv/) available on `PATH`
-- Docker with the Compose plugin
-
-Python 3.12 is the supported project runtime. uv may obtain it when needed.
-
-## Install
-
-From the repository root:
+Install [uv](https://docs.astral.sh/uv/), Docker with Compose, and the Playwright browsers. From the repository root:
 
 ```bash
 uv sync --extra dev --locked --python 3.12
-uv run playwright install chromium firefox webkit
+uv run --frozen playwright install chromium firefox webkit
+uv lock --check
 ```
 
-The committed `uv.lock` is the dependency source for local setup and CI.
-
-## Fast checks
-
-These commands do not need Docker:
-
-```bash
-.venv/bin/python -m pytest --collect-only -q
-.venv/bin/ruff check .
-.venv/bin/ruff format --check .
-.venv/bin/mypy src scripts
-.venv/bin/python -m pytest tests/unit -q
-```
-
-## Primary PostgreSQL workflow
-
-Build and start the controlled stack:
+Start the PostgreSQL stack and confirm readiness:
 
 ```bash
 docker compose config
-docker compose build --no-cache
-docker compose up --detach --wait
-docker compose ps
-.venv/bin/python scripts/wait_for_services.py --timeout 30
-curl --fail --silent http://127.0.0.1:8000/health
+docker compose up --detach --build --wait
+uv run --frozen python scripts/wait_for_services.py --timeout 30
 ```
 
-Configure host-side tests:
+If ports 8000 or 5432 are occupied, use `APP_PORT` and `POSTGRES_PORT` Compose overrides and set the matching URLs below. Do not stop unrelated processes.
 
 ```bash
 export APP_BASE_URL=http://127.0.0.1:8000
 export DATABASE_URL=postgresql://portfolio:local-demo-password@127.0.0.1:5432/portfolio
-export API_TIMEOUT_SECONDS=5
 export ARTIFACTS_DIR=artifacts
-export TEST_RUN_ID=local
+export TEST_RUN_ID=local-review
+
+uv run --frozen pytest tests/unit -q
+uv run --frozen pytest tests/api tests/contract tests/database tests/integration -q
+uv run --frozen pytest tests/ui tests/e2e -q --browser chromium
+uv run --frozen pytest -m 'api or contract or database or integration' -q -n 2
+uv run --frozen pytest tests/ui -q -n 2 --browser chromium
+uv run --frozen pytest -m smoke -q --browser chromium --browser firefox --browser webkit
 ```
 
-Run each layer independently:
+Static checks are `uv run --frozen ruff check .`, `uv run --frozen ruff format --check .`, and `uv run --frozen mypy src scripts`. Mypy checks `src` and `scripts`, not all tests. Stop only this project's stack with `docker compose down`; retain the named database volume.
 
-```bash
-.venv/bin/python -m pytest tests/api -q
-.venv/bin/python -m pytest tests/contract -q
-.venv/bin/python -m pytest tests/database -q
-.venv/bin/python -m pytest tests/integration -q
-.venv/bin/python -m pytest tests/ui --browser chromium -q
-.venv/bin/python -m pytest tests/e2e --browser chromium -q
-```
+SQLite supports isolated repository tests and an explicit focused UI development path (`--allow-sqlite-ui-fallback`). It does not establish PostgreSQL integration or E2E correctness.
 
-Run bounded parallel and browser proofs:
+## Debugging failures
 
-```bash
-.venv/bin/python -m pytest \
-  -m "api or contract or database or integration" -n 2 -q
+Use pytest's failure output, optional HTML/JUnit reports, and `--tracing retain-on-failure --screenshot only-on-failure --video retain-on-failure --output artifacts/playwright` for browser runs. Custom JSON records API method, URL, elapsed time, status or transport category, and browser error events. Its structured URL fields omit credentials, query strings, and fragments, but retain path segments; it does not record request or response bodies, headers, or cookies as separate fields. Console message text and page error names remain raw and can contain URLs or sensitive values. Native Playwright traces, screenshots, and videos, as well as pytest output and Compose logs, are not comprehensively redacted. Review evidence before sharing it and use synthetic test data.
 
-.venv/bin/python -m pytest tests/ui -n 2 --browser chromium -q
+The installed pytest-playwright recorder retains native failure artifacts based on the call report. A failure arising only during teardown may have custom JSON without retained native trace, screenshot, or video. An unexpected API creation status still fails. If its response contains a canonical UUID, an exact API read must match both that ID and every uniquely generated payload field before the manager registers it for cleanup. A timeout, missing or malformed ID, or failed verification leaves no safe exact ID to clean automatically.
 
-.venv/bin/python -m pytest -m smoke \
-  --browser chromium --browser firefox --browser webkit -q
-```
+## Validation record (September 2026)
 
-Stop the containers and network without deleting the named database volume:
+On September 23, before this correction pass, a locked sync and lock check passed; pytest collected 54 cases, Ruff lint/format and Mypy passed, and 40 unit cases passed. The PostgreSQL Compose app built and became healthy. Service tests passed serially (7) and with two workers (7). Chromium UI/E2E passed (7), focused UI passed with two workers (4), and three-engine smoke passed (3). Those results preceded the final code changes.
 
-```bash
-docker compose logs --no-color
-docker compose down
-```
+For the current working tree, pytest collected 59 cases, the 25 focused unit cases and all 45 unit cases passed, and Ruff lint/format and Mypy passed. Four Chromium UI cases passed serially and with two workers against the explicit SQLite fallback. On September 25, the PostgreSQL Compose app built and became healthy; service tests passed serially (7) and with two workers (7), the repeatable failure cleanup regression passed (1), Chromium E2E passed (3), focused Chromium UI passed with two workers (4), and Chromium/Firefox/WebKit smoke passed (3). The project stack was stopped without deleting its named database volume. Remote CI results for later commits must be checked in GitHub Actions.
 
-Do not add `-v` to ordinary shutdown.
+## CI and history
 
-## Failure evidence
+`.github/workflows/quality.yml` runs locked static/unit checks, the PostgreSQL service layers, bounded two-worker checks, Chromium UI/E2E, and three-engine smoke. It uploads reports and diagnostics and stops its Compose stack. CI validates quality; it does not deploy. Historical runs for the July 2026 version are linked in [the validation record](docs/FINAL_VALIDATION_REPORT.md); those results do not validate later edits.
 
-For browser tests, enable native Playwright and portable report output:
-
-```bash
-.venv/bin/python -m pytest tests/ui --browser chromium \
-  --tracing=retain-on-failure \
-  --screenshot=only-on-failure \
-  --video=retain-on-failure \
-  --output=artifacts/playwright \
-  --html=artifacts/browser-report.html \
-  --self-contained-html \
-  --junitxml=artifacts/browser-junit.xml
-```
-
-Failure evidence can include:
-
-- Playwright trace, screenshot, and video
-- console, page, failed-request, and error-response metadata
-- body-free API method/URL/status/duration metadata
-- Pytest HTML and JUnit reports
-- application, PostgreSQL, and Compose logs
-
-Generated evidence stays under ignored paths. Authorization headers, cookies, request
-bodies with private data, environment dumps, private local files, and personal paths are
-excluded.
-
-## Optional lightweight development path
-
-SQLite is available only for isolated logic and quick focused-UI development when the
-primary stack is intentionally not running. It is not an integration or E2E substitute.
-
-```bash
-mkdir -p artifacts
-DATABASE_URL=sqlite:///artifacts/ui-fallback.sqlite3 \
-  .venv/bin/python -m uvicorn demo_app.main:app --host 127.0.0.1 --port 8000
-```
-
-In another terminal:
-
-```bash
-APP_BASE_URL=http://127.0.0.1:8000 \
-DATABASE_URL=sqlite:///artifacts/ui-fallback.sqlite3 \
-  .venv/bin/python -m pytest tests/ui \
-  --allow-sqlite-ui-fallback --browser chromium -q
-```
-
-## Test structure
-
-```text
-tests/
-├── unit/          # isolated framework and application logic
-├── api/           # black-box REST behavior
-├── contract/      # JSON Schema validation
-├── database/      # direct PostgreSQL verification
-├── integration/   # API-to-PostgreSQL lifecycle
-├── ui/            # focused browser behavior
-└── e2e/           # UI-to-API-to-PostgreSQL workflow
-```
-
-The controlled application is intentionally smaller than the test framework. Core tests
-do not call public websites or require external accounts.
-
-## Documentation
-
-- [Architecture](docs/ARCHITECTURE.md)
-- [Design decisions](docs/DESIGN_DECISIONS.md)
-- [Test strategy](docs/TEST_STRATEGY.md)
-- [CI/CD guide](docs/CI_CD_GUIDE.md)
-- [Flaky-test policy](docs/FLAKY_TEST_POLICY.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [Final validation report](docs/FINAL_VALIDATION_REPORT.md)
-
-## Limitations
-
-- Positive order schema coverage is present; a dedicated error-response schema is not.
-- The demo app initializes its small schema directly; migration tooling is outside scope.
-- Authentication, cloud deployment, performance, security, accessibility, and visual
-  regression programs are intentionally outside scope.
-- GitHub Actions validates quality on an Ubuntu runner; it does not deploy or operate the
-  application.
-- This is a portfolio system, not a production application or enterprise framework.
+Additional details: [architecture](docs/ARCHITECTURE.md), [design decisions](docs/DESIGN_DECISIONS.md), [test strategy](docs/TEST_STRATEGY.md), [CI guide](docs/CI_CD_GUIDE.md), [flaky-test policy](docs/FLAKY_TEST_POLICY.md), and [troubleshooting](docs/TROUBLESHOOTING.md).

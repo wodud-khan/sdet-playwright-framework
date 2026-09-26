@@ -11,8 +11,8 @@ docker version
 docker compose version
 ```
 
-Use `main` as the integrated technical baseline. The supported project Python line is
-3.12.
+The supported project Python line is 3.12. Check the branch and commit before comparing
+results with the dated [validation report](FINAL_VALIDATION_REPORT.md).
 
 ## Virtual-environment launchers reference an old repository path
 
@@ -59,6 +59,25 @@ export DATABASE_URL=postgresql://portfolio:local-demo-password@127.0.0.1:5432/po
 
 SQLite is accepted only for isolated logic and focused UI development with the explicit
 `--allow-sqlite-ui-fallback` flag.
+
+For a focused UI reproduction when PostgreSQL is intentionally unavailable, start the
+controlled app from the repository root:
+
+```bash
+mkdir -p artifacts
+DATABASE_URL=sqlite:///artifacts/ui-fallback.sqlite3 \
+  .venv/bin/python -m uvicorn demo_app.main:app --host 127.0.0.1 --port 8000
+```
+
+In another terminal, run only the UI suite:
+
+```bash
+APP_BASE_URL=http://127.0.0.1:8000 \
+DATABASE_URL=sqlite:///artifacts/ui-fallback.sqlite3 \
+  .venv/bin/python -m pytest tests/ui --allow-sqlite-ui-fallback --browser chromium -q
+```
+
+This path does not establish PostgreSQL integration or E2E correctness.
 
 ## Docker is unavailable
 
@@ -144,7 +163,14 @@ structured JSON and Playwright trace:
 uv run playwright show-trace artifacts/playwright/path/to/trace.zip
 ```
 
-Fix the browser or application error; do not suppress the evidence hook.
+Register an expected HTTP error before its request, using exact method, path, status,
+and `count` when multiple identical responses are expected. Duplicate registrations
+are rejected. Other browser errors still fail the test. Fix the browser or application
+error; do not suppress the evidence hook.
+
+A failure that occurs only during teardown can produce custom JSON without a retained
+native trace, screenshot, or video. The installed pytest-playwright recorder uses the
+call result for native retention. For a focused reproduction, use `--tracing on`.
 
 ## Cleanup failed
 
@@ -156,8 +182,14 @@ failure can indicate:
 - the record was changed by another actor
 - the API returned an unexpected result
 
-Inspect the exact order ID and body-free API exchange evidence. Never replace cleanup
+Inspect the exact order ID and structured API exchange evidence. Never replace cleanup
 with table-wide `DELETE`, `TRUNCATE`, wildcard, or global cleanup.
+
+An unexpected create status still fails the test. If its response supplies a canonical
+UUID, the manager registers that ID for cleanup only after an exact API read returns
+the same ID and every uniquely generated payload field. A timeout, missing or malformed
+ID, failed verification, or a response that does not match this test's data leaves no
+safe exact ID to clean up automatically.
 
 ## Parallel-only failures
 
@@ -182,9 +214,19 @@ Reports are generated only when their options are present:
   --junitxml=artifacts/unit-junit.xml
 ```
 
+For a browser failure bundle, use:
+
+```bash
+.venv/bin/python -m pytest tests/ui --browser chromium \
+  --tracing=retain-on-failure --screenshot=only-on-failure \
+  --video=retain-on-failure --output=artifacts/playwright \
+  --html=artifacts/browser-report.html --self-contained-html \
+  --junitxml=artifacts/browser-junit.xml
+```
+
 `artifacts/` is ignored by design. The workflow uploads `unit-reports` and
-`service-browser-evidence` under `if: always()`; that behavior passed in both the
-pull-request and post-merge `main` runs.
+`service-browser-evidence` under `if: always()`. Its July 2026 pull-request and
+post-merge `main` runs passed; those runs do not validate later changes.
 
 ## Evidence contains a personal path or sensitive field
 
@@ -194,6 +236,12 @@ Inspect ordinary files and compressed trace contents before sharing:
 rg -a -n 'authorization|set-cookie|cookie:' artifacts
 unzip -p path/to/trace.zip | rg -a -n 'authorization|set-cookie|cookie:'
 ```
+
+Custom JSON sanitizes structured URL fields by dropping credentials, query strings,
+and fragments; URL path segments remain visible. Console message text and page error
+names remain raw and may themselves contain URLs, credentials, or other sensitive values.
+Native traces, screenshots, videos, pytest output, and Compose logs are not
+comprehensively redacted.
 
 Do not publish an unsafe bundle. Regenerate or sanitize only the offending metadata,
 validate the rebuilt archive with `unzip -t`, and scan it again. Never include local-only

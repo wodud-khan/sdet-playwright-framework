@@ -1,4 +1,4 @@
-"""Run- and worker-aware deterministic test-data generation."""
+"""Run- and worker-aware unique test-data generation."""
 
 from __future__ import annotations
 

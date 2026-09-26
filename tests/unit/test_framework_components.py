@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+import json
+from unittest.mock import Mock
 
 import pytest
 import requests
 from jsonschema import ValidationError
 
 from test_framework.api.client import ApiClient
-from test_framework.contracts import validate_contract
-from test_framework.data_factory import OrderFactory
+from test_framework.contracts import load_order_schema, validate_contract
+from test_framework.data_factory import OrderData, OrderFactory
 from test_framework.db.client import PostgresOrderClient
 from test_framework.order_manager import OrderManager
 
@@ -31,10 +32,11 @@ class _FakeOrderApi:
         self.requested_endpoints.append(("POST", endpoint))
         return _response(
             201,
-            (
-                '{"id":"c56a4180-65aa-42ec-a945-5fd21dec0538",'
-                f'"customer_name":"{payload["customer_name"]}"'
-                "}"
+            json.dumps(
+                {
+                    "id": "c56a4180-65aa-42ec-a945-5fd21dec0538",
+                    "customer_name": payload["customer_name"],
+                }
             ),
         )
 
@@ -70,8 +72,7 @@ def test_clients_reject_invalid_runtime_configuration() -> None:
 
 @pytest.mark.unit
 def test_order_contract_accepts_valid_response() -> None:
-    schema_path = Path("contracts/order.schema.json")
-    schema = __import__("json").loads(schema_path.read_text(encoding="utf-8"))
+    schema = load_order_schema()
     response = {
         "id": "c56a4180-65aa-42ec-a945-5fd21dec0538",
         "customer_name": "Test Customer",
@@ -88,8 +89,7 @@ def test_order_contract_accepts_valid_response() -> None:
 
 @pytest.mark.unit
 def test_order_contract_rejects_unknown_fields() -> None:
-    schema_path = Path("contracts/order.schema.json")
-    schema = __import__("json").loads(schema_path.read_text(encoding="utf-8"))
+    schema = load_order_schema()
     response = {
         "id": "c56a4180-65aa-42ec-a945-5fd21dec0538",
         "customer_name": "Test Customer",
@@ -119,3 +119,140 @@ def test_order_manager_cleans_up_only_its_exact_order() -> None:
         ("DELETE", f"/orders/{created.id}"),
         ("GET", f"/orders/{created.id}"),
     ]
+
+
+@pytest.mark.unit
+def test_unexpected_create_status_registers_only_api_verified_order() -> None:
+    order_id = "c56a4180-65aa-42ec-a945-5fd21dec0538"
+    payload = OrderData("Test unique-owner", "Quality Notebook unique-owner", 2, 2499)
+    factory = Mock()
+    factory.build.return_value = payload
+    api = Mock()
+    api.post.return_value = _response(500, json.dumps({"id": order_id}))
+    api.get.side_effect = [
+        _response(200, json.dumps({"id": order_id, **payload.as_payload()})),
+        _response(404),
+    ]
+    api.delete.return_value = _response(204)
+    manager = OrderManager(api, factory)
+
+    with pytest.raises(AssertionError, match="Expected order creation status 201, got 500"):
+        manager.create()
+
+    assert list(manager._owned_order_ids) == [order_id]
+    manager.cleanup()
+    api.delete.assert_called_once_with(f"/orders/{order_id}")
+    assert not manager._owned_order_ids
+
+
+@pytest.mark.unit
+def test_unexpected_create_status_does_not_claim_unrelated_order() -> None:
+    order_id = "c56a4180-65aa-42ec-a945-5fd21dec0538"
+    payload = OrderData("Test unique-owner", "Quality Notebook unique-owner", 2, 2499)
+    factory = Mock()
+    factory.build.return_value = payload
+    api = Mock()
+    api.post.return_value = _response(500, json.dumps({"id": order_id}))
+    api.get.return_value = _response(
+        200, json.dumps({"id": order_id, **payload.as_payload(), "customer_name": "Other test"})
+    )
+    manager = OrderManager(api, factory)
+
+    with pytest.raises(AssertionError, match="Expected order creation status 201, got 500"):
+        manager.create()
+
+    assert not manager._owned_order_ids
+    manager.cleanup()
+    api.delete.assert_not_called()
+
+
+@pytest.mark.unit
+def test_cleanup_attempts_every_owned_id_and_keeps_only_failures() -> None:
+    api = Mock()
+    api.delete.side_effect = [_response(204), _response(500), _response(204)]
+    api.get.side_effect = [_response(404), _response(404)]
+    manager = OrderManager(api, OrderFactory("run", "gw0"))  # type: ignore[arg-type]
+    for order_id in ("first", "broken", "last"):
+        manager.register_owned(order_id)
+    manager.register_owned("last")
+
+    with pytest.raises(AssertionError, match=r"broken.*500"):
+        manager.cleanup()
+
+    assert api.delete.call_count == 3
+    assert list(manager._owned_order_ids) == ["broken"]
+    api.delete.side_effect = None
+    api.delete.return_value = _response(204)
+    api.get.side_effect = None
+    api.get.return_value = _response(404)
+    manager.cleanup()
+    manager.cleanup()
+    assert api.delete.call_count == 4
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("delete_status", [204, 404])
+def test_cleanup_accepts_verified_absence(delete_status: int) -> None:
+    api = Mock()
+    api.delete.return_value = _response(delete_status)
+    api.get.return_value = _response(404)
+    manager = OrderManager(api, OrderFactory("run", "gw0"))  # type: ignore[arg-type]
+    manager.register_owned("owned")
+
+    manager.cleanup()
+
+    assert not manager._owned_order_ids
+    api.get.assert_called_once_with("/orders/owned")
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("failure", [requests.ConnectionError("offline"), _response(200)])
+def test_cleanup_retains_unverified_order(failure: object) -> None:
+    api = Mock()
+    api.delete.return_value = _response(204)
+    if isinstance(failure, Exception):
+        api.get.side_effect = failure
+    else:
+        api.get.return_value = failure
+    manager = OrderManager(api, OrderFactory("run", "gw0"))  # type: ignore[arg-type]
+    manager.register_owned("owned")
+
+    with pytest.raises(AssertionError, match="owned"):
+        manager.cleanup()
+
+    assert list(manager._owned_order_ids) == ["owned"]
+
+
+@pytest.mark.unit
+def test_cleanup_continues_after_delete_transport_failure() -> None:
+    api = Mock()
+    api.delete.side_effect = [requests.ConnectionError("offline"), _response(204)]
+    api.get.return_value = _response(404)
+    manager = OrderManager(api, OrderFactory("run", "gw0"))  # type: ignore[arg-type]
+    manager.register_owned("successful")
+    manager.register_owned("failed")
+
+    with pytest.raises(AssertionError, match=r"failed.*ConnectionError"):
+        manager.cleanup()
+
+    assert api.delete.call_count == 2
+    assert list(manager._owned_order_ids) == ["failed"]
+
+
+@pytest.mark.unit
+def test_transport_failure_records_metadata_and_preserves_exception() -> None:
+    client = ApiClient("https://user:secret@example.invalid/api", 5)
+    failure = requests.ConnectionError("private connection detail")
+    client.session.request = Mock(side_effect=failure)  # type: ignore[method-assign]
+
+    with pytest.raises(requests.ConnectionError) as caught:
+        client.get("orders/1?token=private")
+
+    assert caught.value is failure
+    exchange = client.exchanges[0]
+    assert exchange.method == "GET"
+    assert exchange.url == "https://example.invalid/api/orders/1"
+    assert exchange.status_code is None
+    assert exchange.error_category == "ConnectionError"
+    assert exchange.elapsed_milliseconds >= 0
+    client.close()

@@ -1,22 +1,38 @@
-"""Typed synchronous API client with safe exchange metadata."""
+"""Typed synchronous API client with structured exchange metadata."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 import requests
 
 
 @dataclass(frozen=True, slots=True)
 class ApiExchange:
-    """Non-sensitive metadata retained for failure evidence."""
+    """Structured request metadata retained for failure evidence."""
 
     method: str
     url: str
-    status_code: int
+    status_code: int | None
     elapsed_milliseconds: int
+    error_category: str | None = None
+
+
+def safe_url(url: str) -> str:
+    """Retain only scheme, host, port, and path in custom evidence."""
+    try:
+        parsed = urlsplit(url)
+        host = parsed.hostname or ""
+        if ":" in host:
+            host = f"[{host}]"
+        if parsed.port is not None:
+            host = f"{host}:{parsed.port}"
+        return urlunsplit((parsed.scheme, host, parsed.path, "", ""))
+    except ValueError:
+        return "<invalid URL>"
 
 
 class ApiClient:
@@ -65,17 +81,29 @@ class ApiClient:
     ) -> requests.Response:
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         started = monotonic()
-        response = self.session.request(
-            method,
-            url,
-            timeout=self.timeout_seconds,
-            **kwargs,
-        )
+        try:
+            response = self.session.request(
+                method,
+                url,
+                timeout=self.timeout_seconds,
+                **kwargs,
+            )
+        except requests.RequestException as error:
+            self._exchanges.append(
+                ApiExchange(
+                    method,
+                    safe_url(url),
+                    None,
+                    round((monotonic() - started) * 1000),
+                    type(error).__name__,
+                )
+            )
+            raise
         elapsed = round((monotonic() - started) * 1000)
         self._exchanges.append(
             ApiExchange(
                 method=method,
-                url=response.url,
+                url=safe_url(response.url),
                 status_code=response.status_code,
                 elapsed_milliseconds=elapsed,
             )

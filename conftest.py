@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from pathlib import Path
 
 import pytest
 from playwright.sync_api import Page
@@ -12,7 +11,7 @@ from test_framework.api.client import ApiClient
 from test_framework.config import Settings
 from test_framework.data_factory import OrderFactory
 from test_framework.db.client import PostgresOrderClient
-from test_framework.diagnostics import BrowserEvidence, safe_test_name, write_json_evidence
+from test_framework.diagnostics import BrowserEvidence, evidence_path, write_json_evidence
 from test_framework.order_manager import OrderManager
 
 
@@ -33,6 +32,52 @@ def pytest_runtest_makereport(
     outcome = yield
     report = outcome.get_result()
     setattr(item, f"rep_{report.when}", report)
+    if report.when != "teardown":
+        return
+
+    failed = any(
+        getattr(item, f"rep_{phase}", None) is not None and getattr(item, f"rep_{phase}").failed
+        for phase in ("setup", "call", "teardown")
+    )
+    api_client = getattr(item, "_evidence_api_client", None)
+    browser = getattr(item, "_browser_evidence", None)
+    evidence_to_write: list[tuple[str, dict[str, object]]] = []
+    if api_client is not None and failed:
+        evidence_to_write.append(
+            (
+                "api",
+                {
+                    "exchanges": [
+                        {
+                            "method": exchange.method,
+                            "url": exchange.url,
+                            "status_code": exchange.status_code,
+                            "elapsed_milliseconds": exchange.elapsed_milliseconds,
+                            "error_category": exchange.error_category,
+                        }
+                        for exchange in api_client.exchanges
+                    ]
+                },
+            )
+        )
+    if browser is not None and (failed or any(browser.as_dict().values())):
+        evidence_to_write.append(("browser", browser.as_dict()))
+    if not evidence_to_write:
+        return
+
+    settings = Settings.from_environment()
+    write_errors: list[str] = []
+    for kind, payload in evidence_to_write:
+        path = evidence_path(settings.artifacts_dir, settings.test_run_id, kind, item.nodeid)
+        try:
+            write_json_evidence(path, payload)
+        except Exception as error:
+            write_errors.append(
+                f"Evidence writing failed ({kind}): {type(error).__name__}: {error}"
+            )
+    if write_errors:
+        report.outcome = "failed"
+        report.longrepr = "\n".join(write_errors)
 
 
 @pytest.fixture(scope="session")
@@ -84,28 +129,11 @@ def api_client(
         service_settings.api_base_url,
         service_settings.api_timeout_seconds,
     )
-    yield client
-    report = getattr(request.node, "rep_call", None)
-    if report is not None and report.failed:
-        output_path = (
-            service_settings.artifacts_dir / "api" / f"{safe_test_name(request.node.nodeid)}.json"
-        )
-        write_json_evidence(
-            output_path,
-            {
-                "test": request.node.nodeid,
-                "exchanges": [
-                    {
-                        "method": exchange.method,
-                        "url": exchange.url,
-                        "status_code": exchange.status_code,
-                        "elapsed_milliseconds": exchange.elapsed_milliseconds,
-                    }
-                    for exchange in client.exchanges
-                ],
-            },
-        )
-    client.close()
+    request.node._evidence_api_client = client
+    try:
+        yield client
+    finally:
+        client.close()
 
 
 @pytest.fixture
@@ -132,41 +160,21 @@ def order_manager(
 @pytest.fixture(autouse=True)
 def browser_evidence(
     request: pytest.FixtureRequest,
-) -> Generator[None, None, None]:
-    """Capture body-free browser events only when a test requests `page`."""
+) -> Generator[BrowserEvidence | None, None, None]:
+    """Capture browser events only when a test requests `page`."""
     if "page" not in request.fixturenames:
-        yield
+        yield None
         return
 
     page: Page = request.getfixturevalue("page")
     evidence = BrowserEvidence()
     evidence.attach(page)
-    yield
-
-    report = getattr(request.node, "rep_call", None)
-    if report is None:
-        return
-
-    settings = Settings.from_environment()
-    output_path = (
-        Path(settings.artifacts_dir) / "browser" / f"{safe_test_name(request.node.nodeid)}.json"
-    )
-    evidence_payload = {
-        "test": request.node.nodeid,
-        **evidence.as_dict(),
-    }
-    has_browser_errors = any(
-        (
-            evidence.console_errors,
-            evidence.page_errors,
-            evidence.failed_requests,
-            evidence.error_responses,
-        )
-    )
-    if report.failed or has_browser_errors:
-        write_json_evidence(output_path, evidence_payload)
-    if report.passed and has_browser_errors:
-        pytest.fail(
-            f"Unexpected browser errors were captured in {output_path}",
-            pytrace=False,
-        )
+    request.node._browser_evidence = evidence
+    yield evidence
+    unexpected = evidence.unexpected_errors()
+    if unexpected and not any(
+        getattr(request.node, f"rep_{phase}", None) is not None
+        and getattr(request.node, f"rep_{phase}").failed
+        for phase in ("setup", "call")
+    ):
+        pytest.fail("Unexpected browser errors: " + "; ".join(unexpected), pytrace=False)

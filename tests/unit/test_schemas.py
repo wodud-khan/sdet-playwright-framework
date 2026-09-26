@@ -28,7 +28,10 @@ def test_order_input_normalizes_human_text() -> None:
         ("customer_name", " "),
         ("item_name", "x"),
         ("quantity", 0),
+        ("quantity", 101),
         ("unit_price_cents", 0),
+        ("unit_price_cents", 1_000_001),
+        ("extra", "unrecognized"),
     ],
 )
 def test_order_input_rejects_invalid_business_values(field: str, value: object) -> None:

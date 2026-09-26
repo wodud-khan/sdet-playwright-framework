@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import psycopg
@@ -41,7 +42,7 @@ class Database:
         if self.backend == "sqlite":
             path = self._sqlite_path()
             path.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(path) as sqlite_connection:
+            with closing(sqlite3.connect(path)) as sqlite_connection, sqlite_connection:
                 sqlite_cursor = sqlite_connection.execute(statement, parameters)
                 return sqlite_cursor.rowcount
 
@@ -61,7 +62,7 @@ class Database:
         if self.backend == "sqlite":
             path = self._sqlite_path()
             path.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(path) as sqlite_connection:
+            with closing(sqlite3.connect(path)) as sqlite_connection, sqlite_connection:
                 sqlite_connection.row_factory = sqlite3.Row
                 row = sqlite_connection.execute(statement, parameters).fetchone()
                 return dict(row) if row is not None else None

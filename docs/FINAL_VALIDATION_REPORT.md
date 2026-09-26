@@ -1,6 +1,10 @@
-# Final Validation Report
+# Historical Validation Report
 
 Report date: 2026-07-27
+
+This report records the repository and environment validated on that date. Its local
+and hosted results do not validate later working-tree changes. Use the current
+[README](../README.md) for present-day commands and results.
 
 ## Executive summary
 
@@ -89,8 +93,8 @@ docker compose logs --no-color
 docker compose down
 ```
 
-The project containers and network are stopped. The named volume
-`sdet-playwright-framework_portfolio_database` remains present; `down -v` was not used.
+At the end of that run, the project containers and network were stopped. The named volume
+`sdet-playwright-framework_portfolio_database` was retained; `down -v` was not used.
 
 ## Primary test results
 
@@ -208,36 +212,12 @@ The expected single failure retained:
 Fixture teardown deleted the exact order and verified API absence. The PostgreSQL table
 count was zero. The temporary test was removed, and the committed E2E passed afterward.
 
-The retained evidence was scanned directly, including decompressed trace contents. It
-contains no authorization headers, cookies, request bodies with private data,
+The evidence retained for that run was scanned directly, including decompressed trace
+contents. The scan found no authorization headers, cookies, request bodies with private data,
 environment-variable dumps, local-only Markdown, passwords, or personal Mac paths.
 Playwright trace stack metadata initially contained absolute repository paths; those
 metadata strings were replaced with `<repository>`, the archive was rebuilt, and
 `unzip -t` plus a second privacy scan passed.
-
-## Capability classification
-
-| Major capability | Classification | Evidence |
-|---|---|---|
-| Python 3.12 locked uv workflow | Implemented and demonstrated | Sync, lock, collection, and tools passed |
-| Pytest discovery and markers | Implemented and demonstrated | 28 tests collected |
-| Ruff and Mypy gates | Implemented and demonstrated | All static gates passed |
-| Isolated unit tests | Implemented and demonstrated | 18 passed |
-| Controlled FastAPI/PostgreSQL app | Implemented and demonstrated | Build, health, readiness, and logs passed |
-| REST API suite | Implemented and demonstrated | 4 passed |
-| JSON contract suite | Implemented and demonstrated | 1 passed |
-| Direct PostgreSQL suite | Implemented and demonstrated | 1 passed |
-| API/database integration | Implemented and demonstrated | 1 passed |
-| Focused Playwright UI | Implemented and demonstrated | 2 Chromium cases passed |
-| UI/API/PostgreSQL E2E | Implemented and demonstrated | Full workflow and restoration runs passed |
-| Unique run/worker data | Implemented and demonstrated | Serial/parallel runs and source review |
-| Exact targeted cleanup | Implemented and demonstrated | E2E and intentional-failure absence proofs |
-| Bounded parallelism | Implemented and demonstrated | 7 service and 2 UI cases passed with two workers |
-| Three-browser smoke | Implemented and demonstrated | Chromium, Firefox, WebKit passed on primary stack |
-| Failure evidence and reports | Implemented and demonstrated | Complete privacy-audited bundle retained locally |
-| Compose stack and non-root app image | Implemented and demonstrated | No-cache build and healthy lifecycle passed |
-| GitHub Actions quality pipeline | Implemented and demonstrated | PR and post-merge `main` runs passed with artifacts |
-| Kubernetes/Jenkins/Allure primary paths | Removed | Outside focused portfolio scope |
 
 ## CI evidence boundary
 
@@ -261,21 +241,6 @@ capabilities.
   outside scope
 - Local container validation exercised ARM64 and hosted validation exercised the GitHub
   Ubuntu environment; no broader platform matrix is claimed
-
-## Validation checklist
-
-- [x] Local container runtime checks passed.
-- [x] Compose config, no-cache build, startup, health, logs, and shutdown passed.
-- [x] API, contract, database, integration, UI, and E2E suites passed independently.
-- [x] Full UI-to-API-to-PostgreSQL cleanup was proven.
-- [x] Intentional-failure teardown deleted only its exact owned ID.
-- [x] Two-worker PostgreSQL service and focused UI execution passed.
-- [x] Three-browser smoke passed against the PostgreSQL stack.
-- [x] Failure reports and logs were privacy-audited.
-- [x] Local-only files remain ignored and absent from Git and Docker context.
-- [x] Pull-request and post-merge `main` GitHub Actions jobs passed.
-- [x] Both hosted runs retained `unit-reports` and `service-browser-evidence`.
-- [x] Hosted artifacts and current public files passed privacy review.
 
 ## Completion decision
 

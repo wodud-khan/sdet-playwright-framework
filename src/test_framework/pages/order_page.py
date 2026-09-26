@@ -6,8 +6,6 @@ from typing import Any
 
 from playwright.sync_api import Page, expect
 
-from test_framework.data_factory import OrderData
-
 
 class OrderPage:
     """Focused interaction boundary for the controlled order UI."""
@@ -36,10 +34,13 @@ class OrderPage:
         expect(self.quantity).to_be_visible()
         expect(self.submit).to_be_enabled()
 
-    def create_order(self, order: OrderData) -> dict[str, Any]:
-        self.customer_name.fill(order.customer_name)
-        self.item_name.fill(order.item_name)
-        self.quantity.fill(str(order.quantity))
+    def submit_order(
+        self, customer_name: str, item_name: str, quantity: int
+    ) -> tuple[int, dict[str, Any]]:
+        """Capture the response before the caller checks the resulting UI."""
+        self.customer_name.fill(customer_name)
+        self.item_name.fill(item_name)
+        self.quantity.fill(str(quantity))
 
         with self.page.expect_response(
             lambda response: (
@@ -49,12 +50,15 @@ class OrderPage:
             self.submit.click()
 
         response = response_info.value
-        if response.status != 201:
-            raise AssertionError(f"Expected UI order creation status 201, got {response.status}")
         body: dict[str, Any] = response.json()
+        return response.status, body
+
+    def expect_order_saved(self, order_id: str, expected_total_cents: int) -> None:
+        """Check displayed values against the test's independent expectation."""
         expect(self.result).to_be_visible()
-        expect(self.order_id).to_have_text(str(body["id"]))
+        expect(self.order_id).to_have_text(order_id)
         expect(self.order_status).to_have_text("created")
-        expect(self.order_total).to_have_text("$49.98")
+        expect(self.order_total).to_have_text(
+            f"${expected_total_cents // 100}.{expected_total_cents % 100:02d}"
+        )
         expect(self.form_status).to_have_text("Order saved.")
-        return body
