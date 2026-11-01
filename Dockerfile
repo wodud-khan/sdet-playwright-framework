@@ -4,7 +4,7 @@ FROM postgres:17.11-alpine3.24 AS database
 RUN apk upgrade --no-cache && rm /usr/local/bin/gosu
 USER postgres
 
-FROM ghcr.io/astral-sh/uv:0.13.5 AS uv-bin
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv-bin
 
 FROM python:3.12.15-alpine3.24 AS app
 
